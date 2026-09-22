@@ -18,13 +18,16 @@ import {
   Layers,
   Box,
   ListOrdered,
-  Timer as TimerIcon
+  Timer as TimerIcon,
+  Sun,
+  Moon
 } from 'lucide-react';
 
 export default function SolverStudioPage() {
   const [isScannerOpen, setIsScannerOpen] = useState(false);
   const [isShortcutsOpen, setIsShortcutsOpen] = useState(false);
   const [soundEnabled, setSoundEnabled] = useState(() => sound.isEnabled());
+  const [theme, setTheme] = useState<'dark' | 'light'>('dark');
   const [mobileTab, setMobileTab] = useState<'editor' | 'preview' | 'solution' | 'timer'>('preview');
 
   const applySingleMove = useCubeStore((s) => s.applySingleMove);
@@ -32,6 +35,32 @@ export default function SolverStudioPage() {
   const resetCube = useCubeStore((s) => s.resetCube);
   const nextStep = useCubeStore((s) => s.nextStep);
   const prevStep = useCubeStore((s) => s.prevStep);
+
+  // Sync theme with document element and localStorage
+  useEffect(() => {
+    const saved = localStorage.getItem('rubix_theme') as 'dark' | 'light' | null;
+    if (saved) {
+      setTheme(saved);
+      if (saved === 'dark') {
+        document.documentElement.classList.add('dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+      }
+    } else {
+      document.documentElement.classList.add('dark');
+    }
+  }, []);
+
+  const toggleTheme = () => {
+    const next = theme === 'dark' ? 'light' : 'dark';
+    setTheme(next);
+    localStorage.setItem('rubix_theme', next);
+    if (next === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  };
 
   const handleToggleSound = () => {
     const newState = sound.toggleSound();
@@ -93,23 +122,23 @@ export default function SolverStudioPage() {
   }, [applySingleMove, scrambleCube, resetCube, nextStep, prevStep]);
 
   return (
-    <div className="min-h-screen lg:h-screen lg:max-h-screen flex flex-col justify-between bg-[#090d16] text-slate-100 select-none overflow-x-hidden font-sans">
+    <div className="min-h-screen lg:h-screen lg:max-h-screen flex flex-col justify-between bg-slate-100/80 dark:bg-[#090d16] text-slate-900 dark:text-slate-100 select-none overflow-x-hidden font-sans transition-colors duration-200">
       {/* Top Header Navbar */}
-      <header className="h-14 shrink-0 bg-[#0d1322]/95 border-b border-slate-800/80 px-3 sm:px-6 flex items-center justify-between z-30 sticky top-0 backdrop-blur-md">
+      <header className="h-14 shrink-0 bg-white/95 dark:bg-[#0d1322]/95 border-b border-slate-200/80 dark:border-slate-800/80 px-3 sm:px-6 flex items-center justify-between z-30 sticky top-0 backdrop-blur-md transition-colors duration-200">
         {/* Left: Rubix Brand */}
         <div className="flex items-center gap-2 sm:gap-3">
           <div className="flex items-center gap-2.5">
             <RubixLogo size={30} />
             <div>
               <div className="flex items-center gap-1.5 leading-none">
-                <span className="text-base font-black tracking-tight text-white">
+                <span className="text-base font-black tracking-tight text-slate-900 dark:text-white">
                   Rubix
                 </span>
-                <span className="text-[9px] sm:text-[10px] uppercase font-extrabold px-1.5 py-0.5 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/25">
+                <span className="text-[9px] sm:text-[10px] uppercase font-extrabold px-1.5 py-0.5 rounded-full bg-blue-50 text-blue-600 border border-blue-200/70 dark:bg-blue-500/10 dark:text-blue-400 dark:border-blue-500/25">
                   3×3 PRO
                 </span>
               </div>
-              <p className="text-[10px] text-slate-400 font-medium leading-none mt-0.5 hidden md:block">
+              <p className="text-[10px] text-slate-400 dark:text-slate-400 font-medium leading-none mt-0.5 hidden md:block">
                 Scan &bull; Build &bull; Solve Step by Step
               </p>
             </div>
@@ -118,14 +147,28 @@ export default function SolverStudioPage() {
 
         {/* Right Header Actions */}
         <div className="flex items-center gap-1.5 sm:gap-2">
+          {/* Light / Dark Theme Toggle Button */}
+          <button
+            type="button"
+            onClick={toggleTheme}
+            className="p-2 rounded-xl border border-slate-200 hover:bg-slate-100 text-slate-600 dark:bg-slate-900/90 dark:hover:bg-slate-800 dark:border-slate-800 dark:text-slate-300 transition-all cursor-pointer shadow-2xs"
+            title={theme === 'dark' ? 'Switch to Light Theme' : 'Switch to Dark Theme'}
+          >
+            {theme === 'dark' ? (
+              <Sun className="w-4 h-4 text-amber-400 hover:rotate-45 transition-transform duration-200" />
+            ) : (
+              <Moon className="w-4 h-4 text-slate-700 hover:-rotate-12 transition-transform duration-200" />
+            )}
+          </button>
+
           {/* Sound Mute/Unmute Toggle */}
           <button
             type="button"
             onClick={handleToggleSound}
             className={`p-2 rounded-xl border transition-all cursor-pointer ${
               soundEnabled
-                ? 'bg-blue-500/15 text-blue-400 border-blue-500/30 shadow-xs'
-                : 'bg-slate-900 text-slate-500 hover:text-slate-300 border-slate-800'
+                ? 'bg-blue-50 text-blue-600 border-blue-200/70 dark:bg-blue-500/15 dark:text-blue-400 dark:border-blue-500/30 shadow-xs'
+                : 'bg-white text-slate-400 hover:text-slate-600 border-slate-200 dark:bg-slate-900 dark:text-slate-500 dark:hover:text-slate-300 dark:border-slate-800'
             }`}
             title={soundEnabled ? 'Mute Sound FX' : 'Enable Sound FX'}
           >
@@ -136,7 +179,7 @@ export default function SolverStudioPage() {
           <button
             type="button"
             onClick={() => setIsShortcutsOpen(true)}
-            className="p-2 text-slate-400 hover:text-white bg-slate-900/90 hover:bg-slate-800 border border-slate-800 rounded-xl transition-colors cursor-pointer hidden sm:flex items-center gap-1.5 text-xs font-medium"
+            className="p-2 text-slate-600 hover:text-slate-900 bg-white hover:bg-slate-50 border border-slate-200 dark:text-slate-400 dark:hover:text-white dark:bg-slate-900/90 dark:hover:bg-slate-800 dark:border-slate-800 rounded-xl transition-colors cursor-pointer hidden sm:flex items-center gap-1.5 text-xs font-medium shadow-2xs"
             title="Keyboard Shortcuts (?)"
           >
             <Keyboard className="w-4 h-4 text-slate-400" />
@@ -146,8 +189,8 @@ export default function SolverStudioPage() {
       </header>
 
       {/* Mobile/Tablet Adaptive View Switcher (< 1024px) */}
-      <div className="lg:hidden bg-[#0d1322] border-b border-slate-800 px-3 py-2 flex items-center justify-between gap-1 overflow-x-auto z-20">
-        <div className="grid grid-cols-4 gap-1 w-full max-w-md mx-auto bg-slate-900/90 p-1 rounded-xl border border-slate-800">
+      <div className="lg:hidden bg-white dark:bg-[#0d1322] border-b border-slate-200 dark:border-slate-800 px-3 py-2 flex items-center justify-between gap-1 overflow-x-auto z-20">
+        <div className="grid grid-cols-4 gap-1 w-full max-w-md mx-auto bg-slate-100 dark:bg-slate-900/90 p-1 rounded-xl border border-slate-200 dark:border-slate-800">
           <button
             type="button"
             onClick={() => setMobileTab('editor')}
@@ -258,17 +301,17 @@ export default function SolverStudioPage() {
         </div>
       </main>
 
-      {/* Compact Clean Dark Footer */}
-      <footer className="h-7 shrink-0 bg-[#0d1322]/90 border-t border-slate-800/80 px-4 sm:px-6 flex items-center justify-between text-[11px] text-slate-500 z-20">
+      {/* Compact Clean Theme Footer */}
+      <footer className="h-7 shrink-0 bg-white/90 dark:bg-[#0d1322]/90 border-t border-slate-200/80 dark:border-slate-800/80 px-4 sm:px-6 flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 z-20 transition-colors duration-200">
         <div className="flex items-center gap-2">
-          <span className="font-bold text-slate-300">Rubix</span>
+          <span className="font-bold text-slate-700 dark:text-slate-300">Rubix</span>
           <span>&bull;</span>
           <span>Kociemba Two-Phase 3&times;3 Engine</span>
         </div>
         <div className="flex items-center gap-3">
           <button
             onClick={() => setIsShortcutsOpen(true)}
-            className="hover:text-blue-400 transition-colors cursor-pointer hidden sm:inline"
+            className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors cursor-pointer hidden sm:inline"
           >
             Hotkeys (?)
           </button>

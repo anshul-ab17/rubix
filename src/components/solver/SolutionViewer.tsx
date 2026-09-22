@@ -57,15 +57,15 @@ export const SolutionViewer: React.FC = () => {
   const estTimeStr = estSeconds < 60 ? `~${estSeconds}s` : `~${Math.ceil(estSeconds / 60)} min`;
 
   return (
-    <div className="h-full flex flex-col justify-between p-3.5 bg-[#0f172a]/95 rounded-2xl border border-slate-800/80 shadow-md select-none">
+    <div className="h-full flex flex-col justify-between p-3.5 bg-white dark:bg-[#0f172a]/95 rounded-2xl border border-slate-200/80 dark:border-slate-800/80 shadow-xs dark:shadow-md select-none transition-colors duration-200">
       <div>
         {/* Top Header & Copy */}
         <div className="flex items-start justify-between mb-2">
           <div>
-            <h2 className="text-sm font-bold text-white tracking-tight">
+            <h2 className="text-sm font-bold text-slate-900 dark:text-white tracking-tight">
               3. Solution &amp; Steps
             </h2>
-            <p className="text-[11px] text-slate-400">
+            <p className="text-[11px] text-slate-400 dark:text-slate-400">
               Optimal 2-Phase Kociemba solver
             </p>
           </div>
@@ -73,22 +73,22 @@ export const SolutionViewer: React.FC = () => {
             type="button"
             onClick={handleCopy}
             disabled={!notationString}
-            className="p-1.5 text-slate-400 hover:text-white disabled:opacity-30 rounded-lg hover:bg-slate-800 transition-colors cursor-pointer"
+            className="p-1.5 text-slate-400 hover:text-slate-700 dark:hover:text-white disabled:opacity-30 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
             title="Copy Solution"
           >
-            {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+            {copied ? <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
           </button>
         </div>
 
         {/* Segmented Tab Switcher */}
-        <div className="grid grid-cols-2 gap-1 bg-slate-900/90 p-1 rounded-xl border border-slate-800 mb-2.5">
+        <div className="grid grid-cols-2 gap-1 bg-slate-100/90 dark:bg-slate-900/90 p-1 rounded-xl border border-slate-200/60 dark:border-slate-800 mb-2.5">
           <button
             type="button"
             onClick={() => setActiveTab('moves')}
             className={`py-1 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
               activeTab === 'moves'
-                ? 'bg-blue-600 text-white shadow-xs font-bold'
-                : 'text-slate-400 hover:text-slate-200'
+                ? 'bg-white dark:bg-blue-600 text-slate-900 dark:text-white shadow-xs font-bold'
+                : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
             }`}
           >
             Move Notation
@@ -98,8 +98,8 @@ export const SolutionViewer: React.FC = () => {
             onClick={() => setActiveTab('steps')}
             className={`py-1 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
               activeTab === 'steps'
-                ? 'bg-blue-600 text-white shadow-xs font-bold'
-                : 'text-slate-400 hover:text-slate-200'
+                ? 'bg-white dark:bg-blue-600 text-slate-900 dark:text-white shadow-xs font-bold'
+                : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
             }`}
           >
             Step Breakdown
@@ -107,23 +107,23 @@ export const SolutionViewer: React.FC = () => {
         </div>
 
         {/* Move Notation Box */}
-        <div className="p-2.5 bg-slate-900/90 border border-slate-800 rounded-xl min-h-[58px] flex items-center justify-center text-center mb-2.5">
+        <div className="p-2.5 bg-slate-50/80 dark:bg-slate-900/90 border border-slate-200/70 dark:border-slate-800 rounded-xl min-h-[58px] flex items-center justify-center text-center mb-2.5">
           {solutionResult ? (
-            <p className="font-mono text-xs font-bold tracking-wider text-slate-200 leading-relaxed break-words line-clamp-3">
+            <p className="font-mono text-xs font-bold tracking-wider text-slate-800 dark:text-slate-200 leading-relaxed break-words line-clamp-3">
               {notationString || 'Solved! No moves needed.'}
             </p>
           ) : isSolving ? (
-            <div className="flex items-center gap-2 text-xs text-blue-400 font-medium animate-pulse">
-              <Sparkles className="w-4 h-4 animate-spin text-blue-400" />
+            <div className="flex items-center gap-2 text-xs text-blue-600 dark:text-blue-400 font-medium animate-pulse">
+              <Sparkles className="w-4 h-4 animate-spin text-blue-500 dark:text-blue-400" />
               <span>Computing optimal Two-Phase solution...</span>
             </div>
           ) : !validation.isValid ? (
-            <div className="flex items-center gap-1.5 text-xs text-amber-300">
-              <AlertCircle className="w-3.5 h-3.5 text-amber-400" />
+            <div className="flex items-center gap-1.5 text-xs text-amber-700 dark:text-amber-300">
+              <AlertCircle className="w-3.5 h-3.5 text-amber-500 dark:text-amber-400" />
               <span>Invalid cube configuration</span>
             </div>
           ) : (
-            <p className="text-xs text-slate-500 font-medium">
+            <p className="text-xs text-slate-400 dark:text-slate-500 font-medium">
               Click &quot;Animate Solution&quot; to compute optimal moves
             </p>
           )}
@@ -132,27 +132,27 @@ export const SolutionViewer: React.FC = () => {
         {/* 3 Stats Metrics Row */}
         <div className="grid grid-cols-3 gap-1.5 mb-2.5">
           {/* Card 1: Move Count */}
-          <div className="bg-blue-500/10 border border-blue-500/20 rounded-xl p-2 flex flex-col items-center justify-center text-center">
-            <span className="text-sm sm:text-base font-extrabold text-blue-400 font-mono">
+          <div className="bg-blue-50/70 dark:bg-blue-500/10 border border-blue-100 dark:border-blue-500/20 rounded-xl p-2 flex flex-col items-center justify-center text-center">
+            <span className="text-sm sm:text-base font-extrabold text-blue-700 dark:text-blue-400 font-mono">
               {solutionResult ? moveCount : '—'}
             </span>
-            <span className="text-[10px] font-semibold text-blue-400/80">Moves</span>
+            <span className="text-[10px] font-semibold text-blue-500 dark:text-blue-400/80">Moves</span>
           </div>
 
           {/* Card 2: Estimated Time */}
-          <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-2 flex flex-col items-center justify-center text-center">
-            <span className="text-sm sm:text-base font-extrabold text-emerald-400 font-mono">
+          <div className="bg-emerald-50/70 dark:bg-emerald-500/10 border border-emerald-100 dark:border-emerald-500/20 rounded-xl p-2 flex flex-col items-center justify-center text-center">
+            <span className="text-sm sm:text-base font-extrabold text-emerald-700 dark:text-emerald-400 font-mono">
               {solutionResult ? estTimeStr : '—'}
             </span>
-            <span className="text-[10px] font-semibold text-emerald-400/80">Est. Time</span>
+            <span className="text-[10px] font-semibold text-emerald-500 dark:text-emerald-400/80">Est. Time</span>
           </div>
 
           {/* Card 3: Optimality */}
-          <div className="bg-purple-500/10 border border-purple-500/20 rounded-xl p-2 flex flex-col items-center justify-center text-center">
-            <span className="text-xs sm:text-sm font-extrabold text-purple-400">
+          <div className="bg-purple-50/70 dark:bg-purple-500/10 border border-purple-100 dark:border-purple-500/20 rounded-xl p-2 flex flex-col items-center justify-center text-center">
+            <span className="text-xs sm:text-sm font-extrabold text-purple-700 dark:text-purple-400">
               Optimal
             </span>
-            <span className="text-[10px] font-semibold text-purple-400/80">Two-Phase</span>
+            <span className="text-[10px] font-semibold text-purple-500 dark:text-purple-400/80">Two-Phase</span>
           </div>
         </div>
       </div>
@@ -164,7 +164,7 @@ export const SolutionViewer: React.FC = () => {
           type="button"
           onClick={handleAnimateClick}
           disabled={!validation.isValid || isSolving}
-          className="w-full py-2.5 px-4 bg-blue-600 hover:bg-blue-500 active:scale-[0.99] disabled:opacity-50 text-white font-bold text-xs sm:text-sm rounded-xl shadow-lg shadow-blue-500/25 flex items-center justify-center gap-2 transition-all cursor-pointer"
+          className="w-full py-2.5 px-4 bg-blue-600 hover:bg-blue-500 active:scale-[0.99] disabled:opacity-50 text-white font-bold text-xs sm:text-sm rounded-xl shadow-md shadow-blue-500/25 flex items-center justify-center gap-2 transition-all cursor-pointer"
         >
           <Play className="w-4 h-4 fill-white" />
           <span>{isPlaying ? 'Pause Solution' : 'Animate Solution'}</span>
@@ -176,9 +176,9 @@ export const SolutionViewer: React.FC = () => {
             type="button"
             onClick={handleCopy}
             disabled={!notationString}
-            className="py-1.5 px-3 bg-slate-900/90 hover:bg-slate-800 border border-slate-800 text-slate-300 hover:text-white rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 shadow-xs transition-all disabled:opacity-30 cursor-pointer"
+            className="py-1.5 px-3 bg-white hover:bg-slate-50 dark:bg-slate-900/90 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 shadow-2xs dark:shadow-xs transition-all disabled:opacity-30 cursor-pointer"
           >
-            <Copy className="w-3.5 h-3.5 text-slate-400" />
+            <Copy className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
             <span>Copy Moves</span>
           </button>
 
@@ -186,9 +186,9 @@ export const SolutionViewer: React.FC = () => {
             type="button"
             onClick={handleExport}
             disabled={!notationString}
-            className="py-1.5 px-3 bg-slate-900/90 hover:bg-slate-800 border border-slate-800 text-slate-300 hover:text-white rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 shadow-xs transition-all disabled:opacity-30 cursor-pointer"
+            className="py-1.5 px-3 bg-white hover:bg-slate-50 dark:bg-slate-900/90 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 shadow-2xs dark:shadow-xs transition-all disabled:opacity-30 cursor-pointer"
           >
-            <Download className="w-3.5 h-3.5 text-slate-400" />
+            <Download className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
             <span>Export</span>
           </button>
         </div>
