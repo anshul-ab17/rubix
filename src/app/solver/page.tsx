@@ -14,7 +14,6 @@ import { useCubeStore } from '@/stores/cube-store';
 import { StandardMove } from '@/types/cube';
 import { sound } from '@/utils/audio';
 import { 
-  BookOpen, 
   Volume2,
   VolumeX,
   Keyboard,
@@ -177,16 +176,6 @@ export default function SolverPage() {
           >
             <Keyboard className="w-4 h-4" />
             <span className="hidden lg:inline">Shortcuts</span>
-          </button>
-
-          {/* Notation Guide button */}
-          <button
-            type="button"
-            onClick={() => setIsGuideOpen(true)}
-            className="px-3 py-1.5 bg-white hover:bg-slate-50 border border-slate-200/80 rounded-xl text-xs font-semibold text-slate-700 flex items-center gap-1.5 shadow-2xs transition-all cursor-pointer"
-          >
-            <BookOpen className="w-3.5 h-3.5 text-slate-500" />
-            <span className="hidden sm:inline">Notation Guide</span>
           </button>
         </div>
       </header>
