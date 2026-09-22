@@ -1,9 +1,23 @@
+'use client';
+
 import { create } from 'zustand';
 import { CubeColor, CubeState, FaceName, FaceState, StandardMove, InputMode, ScannedFace, ValidationResult, FACE_NAMES } from '@/types/cube';
 import { createSolvedCube, cloneCubeState } from '@/lib/cube/cube-state';
 import { applyMove, generateScramble } from '@/lib/cube/cube-moves';
 import { validateCubeState } from '@/lib/cube/cube-validator';
 import { solveCube, SolveResult } from '@/lib/solver/solver-adapter';
+
+function getInverseMove(move: StandardMove): StandardMove {
+  if (move.endsWith("'")) return move.slice(0, 1) as StandardMove;
+  if (move.endsWith("2")) return move;
+  return `${move}'` as StandardMove;
+}
+
+export interface AnimatedMoveEvent {
+  move: StandardMove;
+  id: number;
+  speedMs?: number;
+}
 
 export interface CubeStore {
   cubeState: CubeState;
@@ -16,8 +30,12 @@ export interface CubeStore {
   solutionResult: SolveResult | null;
   currentStepIndex: number;
   isPlaying: boolean;
-  playbackSpeed: number; // in ms interval or multiplier
+  playbackSpeed: number; // in ms interval
   stepStates: CubeState[]; // Snapshot of cube state after each step
+
+  // Animated Move Dispatcher for 3D View
+  activeAnimatedMove: AnimatedMoveEvent | null;
+  isScrambling: boolean;
 
   // Scramble
   currentScramble: string;
@@ -36,7 +54,8 @@ export interface CubeStore {
   resetCube: () => void;
   setCubeState: (state: CubeState) => void;
   applySingleMove: (move: StandardMove) => void;
-  scrambleCube: (length?: number) => void;
+  triggerAnimatedMove: (move: StandardMove, speedMs?: number) => void;
+  scrambleCube: (length?: number) => Promise<void>;
   solveCurrentCube: () => Promise<boolean>;
   stopSolving: () => void;
   setCurrentStepIndex: (index: number) => void;
@@ -66,8 +85,11 @@ export const useCubeStore = create<CubeStore>((set, get) => ({
   solutionResult: null,
   currentStepIndex: 0,
   isPlaying: false,
-  playbackSpeed: 1000,
+  playbackSpeed: 900,
   stepStates: [],
+
+  activeAnimatedMove: null,
+  isScrambling: false,
 
   currentScramble: '',
 
@@ -119,8 +141,10 @@ export const useCubeStore = create<CubeStore>((set, get) => ({
       solutionResult: null,
       currentStepIndex: 0,
       isPlaying: false,
+      isScrambling: false,
       stepStates: [],
       currentScramble: '',
+      activeAnimatedMove: null,
     });
   },
 
@@ -136,31 +160,71 @@ export const useCubeStore = create<CubeStore>((set, get) => ({
     });
   },
 
+  triggerAnimatedMove: (move, speedMs = 200) => {
+    set({
+      activeAnimatedMove: {
+        move,
+        id: Date.now() + Math.random(),
+        speedMs,
+      },
+    });
+  },
+
   applySingleMove: (move) => {
     const nextState = applyMove(get().cubeState, move);
     const validation = validateCubeState(nextState);
     set({
       cubeState: nextState,
       validation,
+      activeAnimatedMove: {
+        move,
+        id: Date.now() + Math.random(),
+        speedMs: 200,
+      },
     });
   },
 
-  scrambleCube: (length = 20) => {
-    const moves = generateScramble(length);
-    let state = createSolvedCube();
-    for (const move of moves) {
-      state = applyMove(state, move);
-    }
-    const scrambleStr = moves.join(' ');
+  scrambleCube: async (length = 20) => {
+    if (get().isScrambling) return;
+    
     set({
-      cubeState: state,
-      initialSolveState: null,
-      currentScramble: scrambleStr,
-      validation: validateCubeState(state),
+      isScrambling: true,
+      isPlaying: false,
       solutionResult: null,
       currentStepIndex: 0,
-      isPlaying: false,
       stepStates: [],
+    });
+
+    const moves = generateScramble(length);
+    const scrambleStr = moves.join(' ');
+    set({ currentScramble: scrambleStr });
+
+    let state = cloneCubeState(get().cubeState);
+    const moveDelay = length > 12 ? 95 : 140;
+
+    for (const move of moves) {
+      // Trigger layer animation in 3D
+      set({
+        activeAnimatedMove: {
+          move,
+          id: Date.now() + Math.random(),
+          speedMs: moveDelay * 0.85,
+        },
+      });
+
+      state = applyMove(state, move);
+      set({
+        cubeState: cloneCubeState(state),
+        validation: validateCubeState(state),
+      });
+
+      // Rapid pause between scramble moves for visual mechanical fluidity
+      await new Promise((resolve) => setTimeout(resolve, moveDelay));
+    }
+
+    set({
+      isScrambling: false,
+      initialSolveState: null,
     });
   },
 
@@ -215,10 +279,20 @@ export const useCubeStore = create<CubeStore>((set, get) => ({
   },
 
   nextStep: () => {
-    const { currentStepIndex, solutionResult, stepStates } = get();
+    const { currentStepIndex, solutionResult, stepStates, playbackSpeed } = get();
     if (!solutionResult) return;
     const nextIdx = Math.min(solutionResult.steps.length, currentStepIndex + 1);
     if (nextIdx !== currentStepIndex && stepStates[nextIdx]) {
+      const step = solutionResult.steps[currentStepIndex];
+      if (step) {
+        set({
+          activeAnimatedMove: {
+            move: step.move,
+            id: Date.now() + Math.random(),
+            speedMs: Math.min(300, playbackSpeed * 0.7),
+          },
+        });
+      }
       set({
         currentStepIndex: nextIdx,
         cubeState: cloneCubeState(stepStates[nextIdx]),
@@ -227,9 +301,20 @@ export const useCubeStore = create<CubeStore>((set, get) => ({
   },
 
   prevStep: () => {
-    const { currentStepIndex, stepStates } = get();
+    const { currentStepIndex, solutionResult, stepStates, playbackSpeed } = get();
     const prevIdx = Math.max(0, currentStepIndex - 1);
     if (prevIdx !== currentStepIndex && stepStates[prevIdx]) {
+      if (solutionResult && solutionResult.steps[prevIdx]) {
+        const step = solutionResult.steps[prevIdx];
+        const invMove = getInverseMove(step.move);
+        set({
+          activeAnimatedMove: {
+            move: invMove,
+            id: Date.now() + Math.random(),
+            speedMs: Math.min(300, playbackSpeed * 0.7),
+          },
+        });
+      }
       set({
         currentStepIndex: prevIdx,
         cubeState: cloneCubeState(stepStates[prevIdx]),

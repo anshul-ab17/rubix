@@ -26,6 +26,7 @@ export const CubeEditor: React.FC<CubeEditorProps> = ({ onOpenScanner }) => {
   const setStickerColor = useCubeStore((s) => s.setStickerColor);
   const resetCube = useCubeStore((s) => s.resetCube);
   const scrambleCube = useCubeStore((s) => s.scrambleCube);
+  const isScrambling = useCubeStore((s) => s.isScrambling);
   const validation = useCubeStore((s) => s.validation);
 
   const [activeTab, setActiveTab] = useState<'build' | 'scan' | 'presets'>('build');
@@ -205,10 +206,11 @@ export const CubeEditor: React.FC<CubeEditorProps> = ({ onOpenScanner }) => {
         <button
           type="button"
           onClick={() => scrambleCube(20)}
-          className="py-1.5 px-3 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 shadow-2xs transition-all cursor-pointer"
+          disabled={isScrambling}
+          className="py-1.5 px-3 bg-white hover:bg-slate-50 disabled:opacity-50 border border-slate-200 text-slate-700 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 shadow-2xs transition-all cursor-pointer"
         >
-          <Shuffle className="w-3.5 h-3.5 text-slate-500" />
-          <span>Random Scramble</span>
+          <Shuffle className={`w-3.5 h-3.5 text-slate-500 ${isScrambling ? 'animate-spin text-blue-600' : ''}`} />
+          <span>{isScrambling ? 'Shuffling...' : 'Random Scramble'}</span>
         </button>
       </div>
     </div>

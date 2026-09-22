@@ -11,17 +11,9 @@ interface Cube3DProps {
   onStickerClick?: (face: FaceName, index: number) => void;
   className?: string;
   autoRotate?: boolean;
-  highlightMove?: StandardMove | null;
   cameraPreset?: 'iso' | 'front' | 'top' | 'right';
+  highlightMove?: StandardMove | null;
 }
-
-// 6 material indices in Three.js BoxGeometry:
-// 0: +X (Right)
-// 1: -X (Left)
-// 2: +Y (Up)
-// 3: -Y (Down)
-// 4: +Z (Front)
-// 5: -Z (Back)
 
 const FACELET_POSITIONS: Record<FaceName, { x: number; y: number; z: number }[]> = {
   U: [
@@ -65,7 +57,7 @@ const FACE_NORMAL_INDEX: Record<FaceName, number> = {
   B: 5, // -Z
 };
 
-const INTERNAL_BLACK = '#0f172a';
+const INTERNAL_BLACK = '#18181b';
 const CUBIE_SIZE = 0.96;
 const CUBIE_SPACING = 1.0;
 
@@ -81,6 +73,7 @@ export const Cube3D: React.FC<Cube3DProps> = ({
   const cubeState = useCubeStore((s) => s.cubeState);
   const activeColor = useCubeStore((s) => s.activeColor);
   const setStickerColor = useCubeStore((s) => s.setStickerColor);
+  const activeAnimatedMove = useCubeStore((s) => s.activeAnimatedMove);
 
   const sceneRef = useRef<THREE.Scene | null>(null);
   const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
@@ -91,12 +84,13 @@ export const Cube3D: React.FC<Cube3DProps> = ({
   const previousMousePositionRef = useRef({ x: 0, y: 0 });
   const touchStartRef = useRef({ x: 0, y: 0 });
   const animatingMoveRef = useRef(false);
+  const activePivotRef = useRef<THREE.Group | null>(null);
 
-  // Helper to get sticker material
+  // Helper to create glossy vinyl sticker materials
   const createStickerMaterial = (hex: string) => {
     return new THREE.MeshStandardMaterial({
       color: new THREE.Color(hex),
-      roughness: 0.15,
+      roughness: 0.12,
       metalness: 0.05,
     });
   };
@@ -123,7 +117,7 @@ export const Cube3D: React.FC<Cube3DProps> = ({
         const color = cubeState[face][i];
         const hex = COLOR_HEX_MAP[color] || '#334155';
 
-        // Find matching cubie
+        // Find matching cubie at coordinate
         const cubie = cubiesRef.current.find((c) => {
           return (
             Math.round(c.position.x) === pos.x &&
@@ -142,11 +136,25 @@ export const Cube3D: React.FC<Cube3DProps> = ({
     }
   }, [cubeState]);
 
-  // Execute smooth animated layer rotation for any standard move
-  const animateLayerRotation = useCallback((move: StandardMove, onComplete?: () => void) => {
-    if (!cubeGroupRef.current || !sceneRef.current || animatingMoveRef.current) {
+  // Execute smooth animated physical layer rotation for any standard move
+  const animateLayerRotation = useCallback((move: StandardMove, speedMs: number = 180, onComplete?: () => void) => {
+    if (!cubeGroupRef.current || !sceneRef.current) {
       if (onComplete) onComplete();
       return;
+    }
+
+    // If an animation is already in progress, finalize it cleanly first
+    if (activePivotRef.current && cubeGroupRef.current) {
+      const oldPivot = activePivotRef.current;
+      oldPivot.children.slice().forEach((child) => {
+        cubeGroupRef.current?.attach(child);
+        child.position.x = Math.round(child.position.x);
+        child.position.y = Math.round(child.position.y);
+        child.position.z = Math.round(child.position.z);
+        child.rotation.set(0, 0, 0);
+      });
+      cubeGroupRef.current.remove(oldPivot);
+      activePivotRef.current = null;
     }
 
     animatingMoveRef.current = true;
@@ -154,7 +162,7 @@ export const Cube3D: React.FC<Cube3DProps> = ({
     const isPrime = move.includes("'");
     const isDouble = move.includes('2');
 
-    // Axis and target angle
+    // Rotation Axis & Direction Angle
     let axis = new THREE.Vector3(0, 1, 0);
     let targetAngle = -Math.PI / 2;
     let filterFn: (pos: THREE.Vector3) => boolean = () => false;
@@ -162,27 +170,27 @@ export const Cube3D: React.FC<Cube3DProps> = ({
     if (face === 'U') {
       axis = new THREE.Vector3(0, 1, 0);
       targetAngle = -Math.PI / 2;
-      filterFn = (pos) => pos.y > 0.5;
+      filterFn = (pos) => pos.y > 0.4;
     } else if (face === 'D') {
       axis = new THREE.Vector3(0, 1, 0);
       targetAngle = Math.PI / 2;
-      filterFn = (pos) => pos.y < -0.5;
+      filterFn = (pos) => pos.y < -0.4;
     } else if (face === 'R') {
       axis = new THREE.Vector3(1, 0, 0);
       targetAngle = -Math.PI / 2;
-      filterFn = (pos) => pos.x > 0.5;
+      filterFn = (pos) => pos.x > 0.4;
     } else if (face === 'L') {
       axis = new THREE.Vector3(1, 0, 0);
       targetAngle = Math.PI / 2;
-      filterFn = (pos) => pos.x < -0.5;
+      filterFn = (pos) => pos.x < -0.4;
     } else if (face === 'F') {
       axis = new THREE.Vector3(0, 0, 1);
       targetAngle = -Math.PI / 2;
-      filterFn = (pos) => pos.z > 0.5;
+      filterFn = (pos) => pos.z > 0.4;
     } else if (face === 'B') {
       axis = new THREE.Vector3(0, 0, 1);
       targetAngle = Math.PI / 2;
-      filterFn = (pos) => pos.z < -0.5;
+      filterFn = (pos) => pos.z < -0.4;
     }
 
     if (isPrime) targetAngle = -targetAngle;
@@ -190,20 +198,23 @@ export const Cube3D: React.FC<Cube3DProps> = ({
 
     const layerCubies = cubiesRef.current.filter((c) => filterFn(c.position));
     const pivot = new THREE.Group();
+    activePivotRef.current = pivot;
     cubeGroupRef.current.add(pivot);
 
     layerCubies.forEach((c) => {
       pivot.attach(c);
     });
 
-    const duration = 220; // ms
+    const duration = Math.max(70, speedMs);
     const startTime = performance.now();
 
     const animate = (time: number) => {
+      if (!animatingMoveRef.current || activePivotRef.current !== pivot) return;
+
       const elapsed = time - startTime;
       const progress = Math.min(1, elapsed / duration);
-      // Smooth cubic ease out
-      const ease = 1 - Math.pow(1 - progress, 3);
+      // High quality cubic ease-out with mechanical snap
+      const ease = 1 - Math.pow(1 - progress, 3.5);
       
       pivot.setRotationFromAxisAngle(axis, targetAngle * ease);
 
@@ -213,7 +224,7 @@ export const Cube3D: React.FC<Cube3DProps> = ({
         pivot.setRotationFromAxisAngle(axis, targetAngle);
         pivot.updateMatrixWorld();
 
-        // Re-attach cubies back to root cube group with updated positions
+        // Re-attach cubies back to root cube group with accurate integer alignment
         layerCubies.forEach((c) => {
           cubeGroupRef.current?.attach(c);
           c.position.x = Math.round(c.position.x);
@@ -223,6 +234,9 @@ export const Cube3D: React.FC<Cube3DProps> = ({
         });
 
         cubeGroupRef.current?.remove(pivot);
+        if (activePivotRef.current === pivot) {
+          activePivotRef.current = null;
+        }
         animatingMoveRef.current = false;
         updateMaterials();
         if (onComplete) onComplete();
@@ -260,9 +274,9 @@ export const Cube3D: React.FC<Cube3DProps> = ({
     const scene = new THREE.Scene();
     sceneRef.current = scene;
 
-    const camera = new THREE.PerspectiveCamera(40, width / height, 0.1, 100);
-    camera.position.set(4.5, 3.6, 5.4);
-    camera.lookAt(0, -0.1, 0);
+    const camera = new THREE.PerspectiveCamera(38, width / height, 0.1, 100);
+    camera.position.set(4.6, 3.7, 5.5);
+    camera.lookAt(0, -0.05, 0);
     cameraRef.current = camera;
 
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
@@ -274,28 +288,28 @@ export const Cube3D: React.FC<Cube3DProps> = ({
 
     container.replaceChildren(renderer.domElement);
 
-    // Studio Lighting
-    const ambientLight = new THREE.AmbientLight(0xffffff, 1.4);
+    // Studio 3-Point Lighting
+    const ambientLight = new THREE.AmbientLight(0xffffff, 1.35);
     scene.add(ambientLight);
 
-    const mainLight = new THREE.DirectionalLight(0xffffff, 2.2);
+    const mainLight = new THREE.DirectionalLight(0xffffff, 2.4);
     mainLight.position.set(6, 10, 8);
     mainLight.castShadow = true;
     mainLight.shadow.mapSize.width = 1024;
     mainLight.shadow.mapSize.height = 1024;
     scene.add(mainLight);
 
-    const fillLight = new THREE.DirectionalLight(0xe0f2fe, 1.2);
+    const fillLight = new THREE.DirectionalLight(0xe2e8f0, 1.1);
     fillLight.position.set(-6, 6, -6);
     scene.add(fillLight);
 
-    const bottomLight = new THREE.DirectionalLight(0xffffff, 0.5);
+    const bottomLight = new THREE.DirectionalLight(0xffffff, 0.45);
     bottomLight.position.set(0, -8, 0);
     scene.add(bottomLight);
 
     // Soft Studio Ground Shadow Plane
     const shadowGeo = new THREE.PlaneGeometry(10, 10);
-    const shadowMat = new THREE.ShadowMaterial({ opacity: 0.15 });
+    const shadowMat = new THREE.ShadowMaterial({ opacity: 0.14 });
     const shadowPlane = new THREE.Mesh(shadowGeo, shadowMat);
     shadowPlane.rotation.x = -Math.PI / 2;
     shadowPlane.position.y = -2.2;
@@ -308,7 +322,7 @@ export const Cube3D: React.FC<Cube3DProps> = ({
     cubeGroupRef.current = cubeGroup;
     scene.add(cubeGroup);
 
-    // Create 27 cubies
+    // Create 27 cubies with glossy sticker caps and beveled black core
     const geometry = new THREE.BoxGeometry(CUBIE_SIZE, CUBIE_SIZE, CUBIE_SIZE);
     const cubies: THREE.Mesh[] = [];
 
@@ -374,10 +388,17 @@ export const Cube3D: React.FC<Cube3DProps> = ({
     }
   }, [cubeState, updateMaterials]);
 
-  // Animate layer rotation when highlightMove triggers
+  // Animate layer rotation when activeAnimatedMove event triggers from store
+  useEffect(() => {
+    if (activeAnimatedMove) {
+      animateLayerRotation(activeAnimatedMove.move, activeAnimatedMove.speedMs || 180);
+    }
+  }, [activeAnimatedMove, animateLayerRotation]);
+
+  // Animate layer rotation when highlightMove prop changes
   useEffect(() => {
     if (highlightMove) {
-      animateLayerRotation(highlightMove);
+      animateLayerRotation(highlightMove, 200);
     }
   }, [highlightMove, animateLayerRotation]);
 
