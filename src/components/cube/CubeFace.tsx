@@ -36,17 +36,17 @@ export const CubeFace: React.FC<CubeFaceProps> = ({
 
   return (
     <div className="flex flex-col items-start gap-1">
-      <span className="text-[11px] font-semibold text-slate-500 tracking-tight">
+      <span className="text-[11px] font-semibold text-slate-400 tracking-tight">
         {label}
       </span>
 
       <div
-        className={`grid grid-cols-3 bg-slate-100 border border-slate-200/80 shadow-xs ${gapSizes[size]}`}
+        className={`grid grid-cols-3 bg-slate-900 border border-slate-800 shadow-md ${gapSizes[size]}`}
       >
         {colors.map((color, idx) => {
           const isCenter = idx === 4;
           const isHighlighted = highlightIndex === idx;
-          const hex = COLOR_HEX_MAP[color] || '#e2e8f0';
+          const hex = COLOR_HEX_MAP[color] || '#334155';
 
           return (
             <button
@@ -55,15 +55,15 @@ export const CubeFace: React.FC<CubeFaceProps> = ({
               onClick={() => onStickerClick && onStickerClick(idx)}
               style={{
                 backgroundColor: hex,
-                border: color === 'white' ? '1px solid #cbd5e1' : '1px solid rgba(0,0,0,0.1)',
+                border: color === 'white' ? '1px solid #475569' : '1px solid rgba(0,0,0,0.3)',
               }}
               className={`
                 ${stickerSizes[size]}
                 relative flex items-center justify-center transition-all duration-150 cursor-pointer
-                shadow-[inset_0_1px_2px_rgba(255,255,255,0.35),0_1px_2px_rgba(0,0,0,0.06)]
+                shadow-[inset_0_1px_2px_rgba(255,255,255,0.25),0_1px_3px_rgba(0,0,0,0.4)]
                 hover:scale-105 active:scale-95
-                ${isCenter ? 'ring-1 ring-slate-400/40' : ''}
-                ${isHighlighted ? 'ring-2 ring-blue-500 animate-pulse' : ''}
+                ${isCenter ? 'ring-1 ring-slate-400/50' : ''}
+                ${isHighlighted ? 'ring-2 ring-blue-400 animate-pulse' : ''}
               `}
               title={`${face}[${idx}] ${color}${isCenter ? ' (Center)' : ''}`}
             />

@@ -315,28 +315,28 @@ export const Cube3D: React.FC<Cube3DProps> = ({
 
     container.replaceChildren(renderer.domElement);
 
-    // Studio 3-Point Lighting
-    const ambientLight = new THREE.AmbientLight(0xffffff, 1.35);
+    // Studio 3-Point Lighting tuned for Dark Mode
+    const ambientLight = new THREE.AmbientLight(0xffffff, 1.45);
     scene.add(ambientLight);
 
-    const mainLight = new THREE.DirectionalLight(0xffffff, 2.4);
+    const mainLight = new THREE.DirectionalLight(0xffffff, 2.6);
     mainLight.position.set(6, 10, 8);
     mainLight.castShadow = true;
     mainLight.shadow.mapSize.width = 1024;
     mainLight.shadow.mapSize.height = 1024;
     scene.add(mainLight);
 
-    const fillLight = new THREE.DirectionalLight(0xe2e8f0, 1.1);
+    const fillLight = new THREE.DirectionalLight(0x93c5fd, 1.2);
     fillLight.position.set(-6, 6, -6);
     scene.add(fillLight);
 
-    const bottomLight = new THREE.DirectionalLight(0xffffff, 0.45);
+    const bottomLight = new THREE.DirectionalLight(0xffffff, 0.5);
     bottomLight.position.set(0, -8, 0);
     scene.add(bottomLight);
 
-    // Soft Studio Ground Shadow Plane
+    // Soft Dark Studio Ground Shadow Plane
     const shadowGeo = new THREE.PlaneGeometry(10, 10);
-    const shadowMat = new THREE.ShadowMaterial({ opacity: 0.14 });
+    const shadowMat = new THREE.ShadowMaterial({ opacity: 0.35 });
     const shadowPlane = new THREE.Mesh(shadowGeo, shadowMat);
     shadowPlane.rotation.x = -Math.PI / 2;
     shadowPlane.position.y = -2.2;
@@ -518,7 +518,7 @@ export const Cube3D: React.FC<Cube3DProps> = ({
           <button
             type="button"
             onClick={handleResetOrientation}
-            className="p-1.5 bg-white/90 hover:bg-white text-slate-600 hover:text-blue-600 border border-slate-200/80 rounded-lg shadow-xs transition-all text-xs flex items-center gap-1 cursor-pointer"
+            className="p-1.5 bg-slate-900/90 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-800 rounded-lg shadow-sm transition-all text-xs flex items-center gap-1 cursor-pointer"
             title="Reset 3D View orientation"
           >
             <RotateCcw className="w-3.5 h-3.5" />

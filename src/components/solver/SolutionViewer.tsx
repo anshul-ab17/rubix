@@ -4,11 +4,7 @@ import React, { useState } from 'react';
 import { useCubeStore } from '@/stores/cube-store';
 import { Copy, Check, Play, Download, Sparkles, AlertCircle } from 'lucide-react';
 
-interface SolutionViewerProps {
-  onOpenGuide?: () => void;
-}
-
-export const SolutionViewer: React.FC<SolutionViewerProps> = ({ onOpenGuide }) => {
+export const SolutionViewer: React.FC = () => {
   const solutionResult = useCubeStore((s) => s.solutionResult);
   const isSolving = useCubeStore((s) => s.isSolving);
   const solveCurrentCube = useCubeStore((s) => s.solveCurrentCube);
@@ -16,7 +12,7 @@ export const SolutionViewer: React.FC<SolutionViewerProps> = ({ onOpenGuide }) =
   const isPlaying = useCubeStore((s) => s.isPlaying);
   const validation = useCubeStore((s) => s.validation);
 
-  const [activeTab, setActiveTab] = useState<'moves' | 'steps' | 'guide'>('moves');
+  const [activeTab, setActiveTab] = useState<'moves' | 'steps'>('moves');
   const [copied, setCopied] = useState(false);
 
   const moves = solutionResult?.moves || [];
@@ -61,88 +57,74 @@ export const SolutionViewer: React.FC<SolutionViewerProps> = ({ onOpenGuide }) =
   const estTimeStr = estSeconds < 60 ? `~${estSeconds}s` : `~${Math.ceil(estSeconds / 60)} min`;
 
   return (
-    <div className="h-full flex flex-col justify-between p-3.5 bg-white rounded-2xl border border-slate-200/80 shadow-xs select-none">
+    <div className="h-full flex flex-col justify-between p-3.5 bg-[#0f172a]/95 rounded-2xl border border-slate-800/80 shadow-md select-none">
       <div>
         {/* Top Header & Copy */}
         <div className="flex items-start justify-between mb-2">
           <div>
-            <h2 className="text-sm font-bold text-slate-900 tracking-tight">
+            <h2 className="text-sm font-bold text-white tracking-tight">
               3. Solution &amp; Steps
             </h2>
             <p className="text-[11px] text-slate-400">
-              Optimized solution using Kociemba algorithm
+              Optimal 2-Phase Kociemba solver
             </p>
           </div>
           <button
             type="button"
             onClick={handleCopy}
             disabled={!notationString}
-            className="p-1.5 text-slate-400 hover:text-slate-700 disabled:opacity-30 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer"
+            className="p-1.5 text-slate-400 hover:text-white disabled:opacity-30 rounded-lg hover:bg-slate-800 transition-colors cursor-pointer"
             title="Copy Solution"
           >
-            {copied ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
+            {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
           </button>
         </div>
 
         {/* Segmented Tab Switcher */}
-        <div className="grid grid-cols-3 gap-1 bg-slate-100/90 p-1 rounded-xl border border-slate-200/60 mb-2.5">
+        <div className="grid grid-cols-2 gap-1 bg-slate-900/90 p-1 rounded-xl border border-slate-800 mb-2.5">
           <button
             type="button"
             onClick={() => setActiveTab('moves')}
             className={`py-1 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
               activeTab === 'moves'
-                ? 'bg-white text-slate-900 shadow-xs font-bold'
-                : 'text-slate-500 hover:text-slate-800'
+                ? 'bg-blue-600 text-white shadow-xs font-bold'
+                : 'text-slate-400 hover:text-slate-200'
             }`}
           >
-            Moves
+            Move Notation
           </button>
           <button
             type="button"
             onClick={() => setActiveTab('steps')}
             className={`py-1 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
               activeTab === 'steps'
-                ? 'bg-white text-slate-900 shadow-xs font-bold'
-                : 'text-slate-500 hover:text-slate-800'
+                ? 'bg-blue-600 text-white shadow-xs font-bold'
+                : 'text-slate-400 hover:text-slate-200'
             }`}
           >
-            Step by Step
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              setActiveTab('guide');
-              if (onOpenGuide) onOpenGuide();
-            }}
-            className={`py-1 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
-              activeTab === 'guide'
-                ? 'bg-white text-slate-900 shadow-xs font-bold'
-                : 'text-slate-500 hover:text-slate-800'
-            }`}
-          >
-            Beginner Guide
+            Step Breakdown
           </button>
         </div>
 
         {/* Move Notation Box */}
-        <div className="p-2.5 bg-slate-50/80 border border-slate-200/70 rounded-xl min-h-[58px] flex items-center justify-center text-center mb-2.5">
+        <div className="p-2.5 bg-slate-900/90 border border-slate-800 rounded-xl min-h-[58px] flex items-center justify-center text-center mb-2.5">
           {solutionResult ? (
-            <p className="font-mono text-xs font-bold tracking-wider text-slate-800 leading-relaxed break-words line-clamp-3">
+            <p className="font-mono text-xs font-bold tracking-wider text-slate-200 leading-relaxed break-words line-clamp-3">
               {notationString || 'Solved! No moves needed.'}
             </p>
           ) : isSolving ? (
-            <div className="flex items-center gap-2 text-xs text-blue-600 font-medium animate-pulse">
-              <Sparkles className="w-4 h-4 animate-spin" />
+            <div className="flex items-center gap-2 text-xs text-blue-400 font-medium animate-pulse">
+              <Sparkles className="w-4 h-4 animate-spin text-blue-400" />
               <span>Computing optimal Two-Phase solution...</span>
             </div>
           ) : !validation.isValid ? (
-            <div className="flex items-center gap-1.5 text-xs text-amber-700">
-              <AlertCircle className="w-3.5 h-3.5 text-amber-500" />
+            <div className="flex items-center gap-1.5 text-xs text-amber-300">
+              <AlertCircle className="w-3.5 h-3.5 text-amber-400" />
               <span>Invalid cube configuration</span>
             </div>
           ) : (
-            <p className="text-xs text-slate-400 font-medium">
-              Click &quot;Animate Solution&quot; to calculate optimal solution
+            <p className="text-xs text-slate-500 font-medium">
+              Click &quot;Animate Solution&quot; to compute optimal moves
             </p>
           )}
         </div>
@@ -150,27 +132,27 @@ export const SolutionViewer: React.FC<SolutionViewerProps> = ({ onOpenGuide }) =
         {/* 3 Stats Metrics Row */}
         <div className="grid grid-cols-3 gap-1.5 mb-2.5">
           {/* Card 1: Move Count */}
-          <div className="bg-blue-50/70 border border-blue-100 rounded-xl p-2 flex flex-col items-center justify-center text-center">
-            <span className="text-sm sm:text-base font-extrabold text-blue-700 font-mono">
+          <div className="bg-blue-500/10 border border-blue-500/20 rounded-xl p-2 flex flex-col items-center justify-center text-center">
+            <span className="text-sm sm:text-base font-extrabold text-blue-400 font-mono">
               {solutionResult ? moveCount : '—'}
             </span>
-            <span className="text-[10px] font-semibold text-blue-500">Moves</span>
+            <span className="text-[10px] font-semibold text-blue-400/80">Moves</span>
           </div>
 
           {/* Card 2: Estimated Time */}
-          <div className="bg-emerald-50/70 border border-emerald-100 rounded-xl p-2 flex flex-col items-center justify-center text-center">
-            <span className="text-sm sm:text-base font-extrabold text-emerald-700 font-mono">
+          <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-2 flex flex-col items-center justify-center text-center">
+            <span className="text-sm sm:text-base font-extrabold text-emerald-400 font-mono">
               {solutionResult ? estTimeStr : '—'}
             </span>
-            <span className="text-[10px] font-semibold text-emerald-500">Est. Time</span>
+            <span className="text-[10px] font-semibold text-emerald-400/80">Est. Time</span>
           </div>
 
           {/* Card 3: Optimality */}
-          <div className="bg-purple-50/70 border border-purple-100 rounded-xl p-2 flex flex-col items-center justify-center text-center">
-            <span className="text-xs sm:text-sm font-extrabold text-purple-700">
+          <div className="bg-purple-500/10 border border-purple-500/20 rounded-xl p-2 flex flex-col items-center justify-center text-center">
+            <span className="text-xs sm:text-sm font-extrabold text-purple-400">
               Optimal
             </span>
-            <span className="text-[10px] font-semibold text-purple-500">(Usually)</span>
+            <span className="text-[10px] font-semibold text-purple-400/80">Two-Phase</span>
           </div>
         </div>
       </div>
@@ -182,7 +164,7 @@ export const SolutionViewer: React.FC<SolutionViewerProps> = ({ onOpenGuide }) =
           type="button"
           onClick={handleAnimateClick}
           disabled={!validation.isValid || isSolving}
-          className="w-full py-2.5 px-4 bg-blue-600 hover:bg-blue-700 active:scale-[0.99] disabled:opacity-50 text-white font-bold text-xs sm:text-sm rounded-xl shadow-sm shadow-blue-500/20 flex items-center justify-center gap-2 transition-all cursor-pointer"
+          className="w-full py-2.5 px-4 bg-blue-600 hover:bg-blue-500 active:scale-[0.99] disabled:opacity-50 text-white font-bold text-xs sm:text-sm rounded-xl shadow-lg shadow-blue-500/25 flex items-center justify-center gap-2 transition-all cursor-pointer"
         >
           <Play className="w-4 h-4 fill-white" />
           <span>{isPlaying ? 'Pause Solution' : 'Animate Solution'}</span>
@@ -194,9 +176,9 @@ export const SolutionViewer: React.FC<SolutionViewerProps> = ({ onOpenGuide }) =
             type="button"
             onClick={handleCopy}
             disabled={!notationString}
-            className="py-1.5 px-3 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 shadow-2xs transition-all disabled:opacity-40 cursor-pointer"
+            className="py-1.5 px-3 bg-slate-900/90 hover:bg-slate-800 border border-slate-800 text-slate-300 hover:text-white rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 shadow-xs transition-all disabled:opacity-30 cursor-pointer"
           >
-            <Copy className="w-3.5 h-3.5 text-slate-500" />
+            <Copy className="w-3.5 h-3.5 text-slate-400" />
             <span>Copy Moves</span>
           </button>
 
@@ -204,9 +186,9 @@ export const SolutionViewer: React.FC<SolutionViewerProps> = ({ onOpenGuide }) =
             type="button"
             onClick={handleExport}
             disabled={!notationString}
-            className="py-1.5 px-3 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 shadow-2xs transition-all disabled:opacity-40 cursor-pointer"
+            className="py-1.5 px-3 bg-slate-900/90 hover:bg-slate-800 border border-slate-800 text-slate-300 hover:text-white rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 shadow-xs transition-all disabled:opacity-30 cursor-pointer"
           >
-            <Download className="w-3.5 h-3.5 text-slate-500" />
+            <Download className="w-3.5 h-3.5 text-slate-400" />
             <span>Export</span>
           </button>
         </div>

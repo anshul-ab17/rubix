@@ -113,16 +113,16 @@ export const FaceScanner: React.FC<FaceScannerProps> = ({ isOpen, onClose }) => 
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs animate-fade-in">
-      <div className="relative w-full max-w-4xl max-h-[90vh] bg-white border border-slate-200 rounded-3xl shadow-2xl overflow-hidden flex flex-col">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-fade-in">
+      <div className="relative w-full max-w-4xl max-h-[90vh] bg-[#0f172a] border border-slate-800 rounded-3xl shadow-2xl overflow-hidden flex flex-col">
         {/* Header */}
-        <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-white">
+        <div className="p-4 border-b border-slate-800 flex items-center justify-between bg-[#0f172a]">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-600">
+            <div className="w-8 h-8 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400">
               <Camera className="w-4 h-4" />
             </div>
             <div>
-              <h3 className="text-sm font-bold text-slate-900">Cube Face Scanner</h3>
+              <h3 className="text-sm font-bold text-white">Cube Face Scanner</h3>
               <p className="text-[11px] text-slate-400">
                 Scan all 6 faces with camera or upload ({scannedCount}/6 captured)
               </p>
@@ -132,14 +132,14 @@ export const FaceScanner: React.FC<FaceScannerProps> = ({ isOpen, onClose }) => 
           <div className="flex items-center gap-2">
             <button
               onClick={resetScan}
-              className="px-2.5 py-1 text-xs text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 rounded-lg flex items-center gap-1 transition-all cursor-pointer"
+              className="px-2.5 py-1 text-xs text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 rounded-lg flex items-center gap-1 transition-all cursor-pointer"
             >
               <RotateCcw className="w-3 h-3" />
               <span>Reset</span>
             </button>
             <button
               onClick={onClose}
-              className="p-1.5 text-slate-400 hover:text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition-all cursor-pointer"
+              className="p-1.5 text-slate-400 hover:text-white bg-slate-800 hover:bg-slate-700 rounded-lg transition-all cursor-pointer"
             >
               <X className="w-4 h-4" />
             </button>
@@ -147,7 +147,7 @@ export const FaceScanner: React.FC<FaceScannerProps> = ({ isOpen, onClose }) => 
         </div>
 
         {/* 6-Face Progress Stepper */}
-        <div className="grid grid-cols-6 gap-1.5 p-3 bg-slate-50 border-b border-slate-100">
+        <div className="grid grid-cols-6 gap-1.5 p-3 bg-slate-900 border-b border-slate-800">
           {SCAN_ORDER.map((item, idx) => {
             const isDone = scannedFaces[item.face] !== null;
             const isCurrent = idx === currentScanFaceIndex;
@@ -158,40 +158,40 @@ export const FaceScanner: React.FC<FaceScannerProps> = ({ isOpen, onClose }) => 
                 onClick={() => useCubeStore.setState({ currentScanFaceIndex: idx })}
                 className={`flex flex-col items-center gap-1 p-1.5 rounded-xl border transition-all cursor-pointer ${
                   isCurrent
-                    ? 'bg-blue-50 border-blue-500 shadow-2xs'
+                    ? 'bg-blue-500/20 border-blue-500 shadow-md ring-1 ring-blue-500/40'
                     : isDone
-                    ? 'bg-emerald-50/80 border-emerald-300 text-emerald-700'
-                    : 'bg-white border-slate-200 text-slate-500 hover:bg-slate-100'
+                    ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-400'
+                    : 'bg-slate-800/80 border-slate-700/80 text-slate-400 hover:bg-slate-800'
                 }`}
               >
                 <div
                   style={{ backgroundColor: COLOR_HEX_MAP[item.centerColor] }}
-                  className="w-4 h-4 rounded-sm shadow-2xs border border-slate-300 flex items-center justify-center text-[9px] font-extrabold text-slate-900"
+                  className="w-4 h-4 rounded-sm shadow-xs border border-slate-600 flex items-center justify-center text-[9px] font-extrabold text-slate-900"
                 >
                   {item.face}
                 </div>
-                <span className="text-[10px] font-semibold truncate max-w-full">
+                <span className="text-[10px] font-semibold truncate max-w-full text-slate-200">
                   {item.face}
                 </span>
-                {isDone && <Check className="w-3 h-3 text-emerald-600" />}
+                {isDone && <Check className="w-3 h-3 text-emerald-400" />}
               </button>
             );
           })}
         </div>
 
         {/* Workspace Body */}
-        <div className="p-4 overflow-y-auto grid grid-cols-1 md:grid-cols-12 gap-4 items-start">
+        <div className="p-4 overflow-y-auto grid grid-cols-1 md:grid-cols-12 gap-4 items-start bg-[#0b1120]">
           {/* Left: Capture (Camera / Upload) */}
-          <div className="md:col-span-7 bg-slate-50/60 border border-slate-200 p-3.5 rounded-2xl flex flex-col gap-3">
+          <div className="md:col-span-7 bg-slate-900/90 border border-slate-800 p-3.5 rounded-2xl flex flex-col gap-3">
             {/* Method switch */}
-            <div className="flex items-center justify-between border-b border-slate-200/80 pb-2">
-              <div className="flex items-center gap-1 bg-white p-0.5 rounded-lg border border-slate-200">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+              <div className="flex items-center gap-1 bg-slate-950 p-0.5 rounded-lg border border-slate-800">
                 <button
                   onClick={() => setScanMethod('camera')}
                   className={`px-3 py-1 rounded-md text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer ${
                     scanMethod === 'camera'
-                      ? 'bg-blue-600 text-white shadow-2xs'
-                      : 'text-slate-600 hover:text-slate-900'
+                      ? 'bg-blue-600 text-white shadow-xs'
+                      : 'text-slate-400 hover:text-white'
                   }`}
                 >
                   <Camera className="w-3.5 h-3.5" />
@@ -201,8 +201,8 @@ export const FaceScanner: React.FC<FaceScannerProps> = ({ isOpen, onClose }) => 
                   onClick={() => setScanMethod('upload')}
                   className={`px-3 py-1 rounded-md text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer ${
                     scanMethod === 'upload'
-                      ? 'bg-blue-600 text-white shadow-2xs'
-                      : 'text-slate-600 hover:text-slate-900'
+                      ? 'bg-blue-600 text-white shadow-xs'
+                      : 'text-slate-400 hover:text-white'
                   }`}
                 >
                   <Upload className="w-3.5 h-3.5" />
@@ -210,16 +210,16 @@ export const FaceScanner: React.FC<FaceScannerProps> = ({ isOpen, onClose }) => 
                 </button>
               </div>
 
-              <span className="text-xs font-bold text-blue-600">
+              <span className="text-xs font-bold text-blue-400">
                 Face {currentScanFaceIndex + 1} of 6
               </span>
             </div>
 
             {/* Instruction */}
-            <div className="bg-white border border-slate-200 p-2.5 rounded-xl flex items-start gap-2 text-xs">
-              <HelpCircle className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
-              <div>
-                <strong className="text-slate-900 font-bold">{currentFaceInfo.name} ({currentFaceInfo.face})</strong>: {currentFaceInfo.instruction}
+            <div className="bg-slate-950 border border-slate-800 p-2.5 rounded-xl flex items-start gap-2 text-xs">
+              <HelpCircle className="w-4 h-4 text-blue-400 shrink-0 mt-0.5" />
+              <div className="text-slate-300">
+                <strong className="text-white font-bold">{currentFaceInfo.name} ({currentFaceInfo.face})</strong>: {currentFaceInfo.instruction}
               </div>
             </div>
 
@@ -236,8 +236,8 @@ export const FaceScanner: React.FC<FaceScannerProps> = ({ isOpen, onClose }) => 
 
           {/* Right: Detected Review */}
           <div className="md:col-span-5 flex flex-col gap-3">
-            <div className="bg-slate-50/60 border border-slate-200 p-3.5 rounded-2xl flex flex-col gap-3">
-              <span className="text-xs font-bold text-slate-800">Detected Face Grid</span>
+            <div className="bg-slate-900/90 border border-slate-800 p-3.5 rounded-2xl flex flex-col gap-3">
+              <span className="text-xs font-bold text-white">Detected Face Grid</span>
 
               {currentFaceData ? (
                 <div className="flex flex-col items-center gap-3">
@@ -251,8 +251,8 @@ export const FaceScanner: React.FC<FaceScannerProps> = ({ isOpen, onClose }) => 
                   />
 
                   {selectedStickerIdx !== null && (
-                    <div className="w-full bg-white border border-slate-200 p-2 rounded-xl flex flex-col gap-1.5 animate-fade-in">
-                      <span className="text-[11px] text-slate-600 font-medium">
+                    <div className="w-full bg-slate-950 border border-slate-800 p-2 rounded-xl flex flex-col gap-1.5 animate-fade-in">
+                      <span className="text-[11px] text-slate-400 font-medium">
                         Change sticker #{selectedStickerIdx + 1} color:
                       </span>
                       <div className="grid grid-cols-6 gap-1.5">
@@ -261,7 +261,7 @@ export const FaceScanner: React.FC<FaceScannerProps> = ({ isOpen, onClose }) => 
                             key={col}
                             onClick={() => handleCorrectSticker(col)}
                             style={{ backgroundColor: COLOR_HEX_MAP[col] }}
-                            className="h-6 rounded-md shadow-2xs border border-slate-300 hover:scale-110 active:scale-95 transition-transform"
+                            className="h-6 rounded-md shadow-xs border border-slate-700 hover:scale-110 active:scale-95 transition-transform"
                             title={COLOR_NAME_MAP[col]}
                           />
                         ))}
@@ -270,17 +270,17 @@ export const FaceScanner: React.FC<FaceScannerProps> = ({ isOpen, onClose }) => 
                   )}
                 </div>
               ) : (
-                <div className="py-8 text-center text-xs text-slate-400">
+                <div className="py-8 text-center text-xs text-slate-500">
                   Align cube face in camera and click capture
                 </div>
               )}
 
               {/* Navigation */}
-              <div className="flex items-center justify-between pt-2 border-t border-slate-200">
+              <div className="flex items-center justify-between pt-2 border-t border-slate-800">
                 <button
                   onClick={prevScanFace}
                   disabled={currentScanFaceIndex === 0}
-                  className="px-2.5 py-1 bg-white hover:bg-slate-100 disabled:opacity-30 border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 flex items-center gap-1 cursor-pointer"
+                  className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 disabled:opacity-30 border border-slate-700 rounded-lg text-xs font-semibold text-slate-200 flex items-center gap-1 cursor-pointer"
                 >
                   <ChevronLeft className="w-3.5 h-3.5" />
                   <span>Prev</span>
@@ -289,7 +289,7 @@ export const FaceScanner: React.FC<FaceScannerProps> = ({ isOpen, onClose }) => 
                 <button
                   onClick={nextScanFace}
                   disabled={currentScanFaceIndex === 5}
-                  className="px-2.5 py-1 bg-white hover:bg-slate-100 disabled:opacity-30 border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 flex items-center gap-1 cursor-pointer"
+                  className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 disabled:opacity-30 border border-slate-700 rounded-lg text-xs font-semibold text-slate-200 flex items-center gap-1 cursor-pointer"
                 >
                   <span>Next</span>
                   <ChevronRight className="w-3.5 h-3.5" />
@@ -300,13 +300,13 @@ export const FaceScanner: React.FC<FaceScannerProps> = ({ isOpen, onClose }) => 
             {/* Apply Button */}
             <button
               onClick={handleApply}
-              className={`w-full py-2.5 px-4 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-xs cursor-pointer ${
+              className={`w-full py-2.5 px-4 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-md cursor-pointer ${
                 allFacesCaptured
-                  ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-blue-500/25'
-                  : 'bg-slate-200 hover:bg-slate-300 text-slate-700'
+                  ? 'bg-blue-600 hover:bg-blue-500 text-white shadow-blue-500/30'
+                  : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
               }`}
             >
-              <Sparkles className="w-4 h-4" />
+              <Sparkles className="w-4 h-4 text-blue-300" />
               <span>Apply {scannedCount}/6 Scanned Faces</span>
             </button>
           </div>

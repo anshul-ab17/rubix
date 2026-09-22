@@ -19,11 +19,11 @@ export const CenterPreview: React.FC = () => {
   return (
     <div className="h-full flex flex-col justify-between gap-3 select-none">
       {/* 3D Cube Preview Main Card */}
-      <div className="flex-1 bg-white rounded-2xl border border-slate-200/80 p-3.5 shadow-xs flex flex-col justify-between relative min-h-0">
+      <div className="flex-1 bg-[#0f172a]/95 rounded-2xl border border-slate-800/80 p-3.5 shadow-md flex flex-col justify-between relative min-h-0">
         {/* Card Header & View Switcher */}
         <div className="flex items-center justify-between mb-1 z-10">
           <div>
-            <h2 className="text-sm font-bold text-slate-900 tracking-tight">
+            <h2 className="text-sm font-bold text-white tracking-tight">
               2. 3D Cube Preview
             </h2>
             <p className="text-[11px] text-slate-400">
@@ -33,14 +33,14 @@ export const CenterPreview: React.FC = () => {
 
           <div className="flex items-center gap-1.5">
             {/* View Mode Segmented Switcher */}
-            <div className="flex items-center bg-slate-100 p-0.5 rounded-xl border border-slate-200/60">
+            <div className="flex items-center bg-slate-900 p-0.5 rounded-xl border border-slate-800">
               <button
                 type="button"
                 onClick={() => setViewType('3d')}
                 className={`px-2.5 py-1 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
                   viewType === '3d'
-                    ? 'bg-blue-600 text-white shadow-2xs font-bold'
-                    : 'text-slate-600 hover:text-slate-900'
+                    ? 'bg-blue-600 text-white shadow-xs font-bold'
+                    : 'text-slate-400 hover:text-slate-200'
                 }`}
               >
                 3D View
@@ -50,8 +50,8 @@ export const CenterPreview: React.FC = () => {
                 onClick={() => setViewType('net')}
                 className={`px-2.5 py-1 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
                   viewType === 'net'
-                    ? 'bg-blue-600 text-white shadow-2xs font-bold'
-                    : 'text-slate-600 hover:text-slate-900'
+                    ? 'bg-blue-600 text-white shadow-xs font-bold'
+                    : 'text-slate-400 hover:text-slate-200'
                 }`}
               >
                 Net View
@@ -61,8 +61,8 @@ export const CenterPreview: React.FC = () => {
                 onClick={() => setAutoRotate(!autoRotate)}
                 className={`px-2.5 py-1 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
                   autoRotate
-                    ? 'bg-blue-100 text-blue-700 font-bold'
-                    : 'text-slate-600 hover:text-slate-900'
+                    ? 'bg-blue-500/20 text-blue-400 font-bold border border-blue-500/30'
+                    : 'text-slate-400 hover:text-slate-200'
                 }`}
               >
                 Auto Rotate
@@ -78,7 +78,7 @@ export const CenterPreview: React.FC = () => {
                   document.exitFullscreen().catch(() => {});
                 }
               }}
-              className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
+              className="p-1.5 text-slate-400 hover:text-slate-200 hover:bg-slate-800 rounded-lg transition-colors cursor-pointer"
               title="Toggle Fullscreen"
             >
               <Maximize2 className="w-4 h-4" />
@@ -96,9 +96,9 @@ export const CenterPreview: React.FC = () => {
                 className="w-full h-full"
               />
 
-              {/* Gentle Helper Overlay Text */}
-              <div className="absolute bottom-1 pointer-events-none flex items-center gap-1.5 text-[11px] text-slate-400 font-medium">
-                <span>Drag to rotate</span>
+              {/* Helper Overlay */}
+              <div className="absolute bottom-1 pointer-events-none flex items-center gap-1.5 text-[11px] text-slate-500 font-medium">
+                <span>Drag to rotate 3D view</span>
               </div>
             </div>
           ) : (
@@ -167,8 +167,8 @@ export const CenterPreview: React.FC = () => {
             onClick={() => setCameraPreset('iso')}
             className={`px-3 py-1 text-xs font-semibold rounded-xl border transition-all cursor-pointer flex items-center gap-1 ${
               cameraPreset === 'iso'
-                ? 'bg-blue-600 text-white border-blue-600 shadow-2xs font-bold'
-                : 'bg-white hover:bg-slate-50 text-slate-700 border-slate-200 shadow-2xs'
+                ? 'bg-blue-600 text-white border-blue-600 shadow-xs font-bold'
+                : 'bg-slate-900 hover:bg-slate-800 text-slate-300 border-slate-800'
             }`}
           >
             <RotateCcw className="w-3 h-3" />
@@ -180,8 +180,8 @@ export const CenterPreview: React.FC = () => {
             onClick={() => setCameraPreset('front')}
             className={`px-3 py-1 text-xs font-semibold rounded-xl border transition-all cursor-pointer ${
               cameraPreset === 'front'
-                ? 'bg-blue-600 text-white border-blue-600 shadow-2xs font-bold'
-                : 'bg-white hover:bg-slate-50 text-slate-700 border-slate-200 shadow-2xs'
+                ? 'bg-blue-600 text-white border-blue-600 shadow-xs font-bold'
+                : 'bg-slate-900 hover:bg-slate-800 text-slate-300 border-slate-800'
             }`}
           >
             Front (F)
@@ -192,8 +192,8 @@ export const CenterPreview: React.FC = () => {
             onClick={() => setCameraPreset('top')}
             className={`px-3 py-1 text-xs font-semibold rounded-xl border transition-all cursor-pointer ${
               cameraPreset === 'top'
-                ? 'bg-blue-600 text-white border-blue-600 shadow-2xs font-bold'
-                : 'bg-white hover:bg-slate-50 text-slate-700 border-slate-200 shadow-2xs'
+                ? 'bg-blue-600 text-white border-blue-600 shadow-xs font-bold'
+                : 'bg-slate-900 hover:bg-slate-800 text-slate-300 border-slate-800'
             }`}
           >
             Top (U)
@@ -204,8 +204,8 @@ export const CenterPreview: React.FC = () => {
             onClick={() => setCameraPreset('right')}
             className={`px-3 py-1 text-xs font-semibold rounded-xl border transition-all cursor-pointer ${
               cameraPreset === 'right'
-                ? 'bg-blue-600 text-white border-blue-600 shadow-2xs font-bold'
-                : 'bg-white hover:bg-slate-50 text-slate-700 border-slate-200 shadow-2xs'
+                ? 'bg-blue-600 text-white border-blue-600 shadow-xs font-bold'
+                : 'bg-slate-900 hover:bg-slate-800 text-slate-300 border-slate-800'
             }`}
           >
             Right (R)

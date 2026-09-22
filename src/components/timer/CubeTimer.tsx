@@ -38,7 +38,6 @@ export const CubeTimer: React.FC = () => {
   const animFrameRef = useRef<number | null>(null);
   const holdTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Generate initial scramble if none
   useEffect(() => {
     if (!currentScramble) {
       scrambleCube(20);
@@ -127,7 +126,6 @@ export const CubeTimer: React.FC = () => {
     };
   }, [timerState, startTimer, stopTimer, activeTab]);
 
-  // Format Millisecond Time (e.g., "12.45")
   const formatTime = (ms: number) => {
     const totalSeconds = ms / 1000;
     const mins = Math.floor(totalSeconds / 60);
@@ -138,7 +136,6 @@ export const CubeTimer: React.FC = () => {
     return secs;
   };
 
-  // Metrics: Best Time & Ao5
   const bestTime = history.length > 0 ? Math.min(...history.map((h) => h.timeMs)) : null;
 
   const calculateAo5 = () => {
@@ -151,48 +148,48 @@ export const CubeTimer: React.FC = () => {
   const ao5 = calculateAo5();
 
   return (
-    <div className="h-full flex flex-col justify-between p-3.5 bg-white rounded-2xl border border-slate-200/80 shadow-xs select-none">
+    <div className="h-full flex flex-col justify-between p-3.5 bg-[#0f172a]/95 rounded-2xl border border-slate-800/80 shadow-md select-none">
       <div>
         {/* Header */}
         <div className="flex items-start justify-between mb-2">
           <div>
-            <h2 className="text-sm font-bold text-slate-900 tracking-tight">
+            <h2 className="text-sm font-bold text-white tracking-tight">
               4. Timer &amp; Freeplay
             </h2>
             <p className="text-[11px] text-slate-400">
-              Practice, scramble and beat your best time
+              Practice, scramble and track speedcubing stats
             </p>
           </div>
         </div>
 
         {/* Segmented Switcher */}
-        <div className="grid grid-cols-2 gap-1 bg-slate-100/90 p-1 rounded-xl border border-slate-200/60 mb-3">
+        <div className="grid grid-cols-2 gap-1 bg-slate-900/90 p-1 rounded-xl border border-slate-800 mb-3">
           <button
             type="button"
             onClick={() => setActiveTab('timer')}
             className={`py-1 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
               activeTab === 'timer'
-                ? 'bg-white text-slate-900 shadow-xs font-bold'
-                : 'text-slate-500 hover:text-slate-800'
+                ? 'bg-blue-600 text-white shadow-xs font-bold'
+                : 'text-slate-400 hover:text-slate-200'
             }`}
           >
-            Timer
+            WCA Timer
           </button>
           <button
             type="button"
             onClick={() => setActiveTab('freeplay')}
             className={`py-1 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
               activeTab === 'freeplay'
-                ? 'bg-white text-slate-900 shadow-xs font-bold'
-                : 'text-slate-500 hover:text-slate-800'
+                ? 'bg-blue-600 text-white shadow-xs font-bold'
+                : 'text-slate-400 hover:text-slate-200'
             }`}
           >
-            Freeplay
+            Freeplay Keypad
           </button>
         </div>
 
         {activeTab === 'timer' ? (
-          /* Large Digital Timer View */
+          /* Digital Timer View */
           <div>
             <div 
               onPointerDown={() => {
@@ -213,19 +210,19 @@ export const CubeTimer: React.FC = () => {
                   setTimerState('idle');
                 }
               }}
-              className="py-3 px-4 rounded-2xl bg-slate-50 border border-slate-200/80 cursor-pointer active:bg-slate-100 flex flex-col items-center justify-center text-center transition-all select-none touch-none"
+              className="py-3 px-4 rounded-2xl bg-slate-900/90 border border-slate-800 cursor-pointer active:bg-slate-800/80 flex flex-col items-center justify-center text-center transition-all select-none touch-none shadow-inner"
             >
               <span
                 className={`
                   text-3xl sm:text-4xl font-extrabold font-mono tracking-tight transition-all duration-150
                   ${
                     timerState === 'ready'
-                      ? 'text-emerald-500 scale-105'
+                      ? 'text-emerald-400 scale-105 drop-shadow-[0_0_12px_rgba(52,211,153,0.5)]'
                       : timerState === 'holding'
-                      ? 'text-amber-500'
+                      ? 'text-amber-400 drop-shadow-[0_0_8px_rgba(251,191,36,0.4)]'
                       : timerState === 'running'
-                      ? 'text-blue-600'
-                      : 'text-slate-900'
+                      ? 'text-blue-400 drop-shadow-[0_0_10px_rgba(96,165,250,0.5)]'
+                      : 'text-white'
                   }
                 `}
               >
@@ -233,7 +230,7 @@ export const CubeTimer: React.FC = () => {
               </span>
               <span className="text-[11px] text-slate-400 mt-1 font-medium">
                 {timerState === 'running'
-                  ? 'Tap anywhere or Spacebar to STOP'
+                  ? 'Tap screen or Spacebar to STOP'
                   : timerState === 'ready'
                   ? 'Release to START!'
                   : timerState === 'holding'
@@ -245,34 +242,34 @@ export const CubeTimer: React.FC = () => {
             {/* 3 Metrics Row */}
             <div className="grid grid-cols-3 gap-1.5 mt-2">
               {/* Best Time */}
-              <div className="bg-amber-50/70 border border-amber-100 rounded-xl p-1.5 flex flex-col items-center justify-center text-center">
-                <div className="flex items-center gap-1 text-amber-600 text-[10px] font-bold">
+              <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-1.5 flex flex-col items-center justify-center text-center">
+                <div className="flex items-center gap-1 text-amber-400 text-[10px] font-bold">
                   <Trophy className="w-3 h-3" />
                   <span>Best Time</span>
                 </div>
-                <span className="text-xs font-mono font-extrabold text-amber-800 mt-0.5">
+                <span className="text-xs font-mono font-extrabold text-amber-300 mt-0.5">
                   {bestTime ? formatTime(bestTime) : '—'}
                 </span>
               </div>
 
               {/* Solves Count */}
-              <div className="bg-emerald-50/70 border border-emerald-100 rounded-xl p-1.5 flex flex-col items-center justify-center text-center">
-                <div className="flex items-center gap-1 text-emerald-600 text-[10px] font-bold">
+              <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-1.5 flex flex-col items-center justify-center text-center">
+                <div className="flex items-center gap-1 text-emerald-400 text-[10px] font-bold">
                   <BarChart2 className="w-3 h-3" />
                   <span>Solves</span>
                 </div>
-                <span className="text-xs font-mono font-extrabold text-emerald-800 mt-0.5">
+                <span className="text-xs font-mono font-extrabold text-emerald-300 mt-0.5">
                   {history.length}
                 </span>
               </div>
 
               {/* Ao5 */}
-              <div className="bg-rose-50/70 border border-rose-100 rounded-xl p-1.5 flex flex-col items-center justify-center text-center">
-                <div className="flex items-center gap-1 text-rose-600 text-[10px] font-bold">
+              <div className="bg-rose-500/10 border border-rose-500/20 rounded-xl p-1.5 flex flex-col items-center justify-center text-center">
+                <div className="flex items-center gap-1 text-rose-400 text-[10px] font-bold">
                   <Flame className="w-3 h-3" />
                   <span>Ao5</span>
                 </div>
-                <span className="text-xs font-mono font-extrabold text-rose-800 mt-0.5">
+                <span className="text-xs font-mono font-extrabold text-rose-300 mt-0.5">
                   {ao5 ? formatTime(ao5) : '—'}
                 </span>
               </div>
@@ -287,13 +284,13 @@ export const CubeTimer: React.FC = () => {
                   key={m}
                   type="button"
                   onClick={() => applySingleMove(m)}
-                  className="py-1 px-1 rounded-lg bg-slate-100 hover:bg-blue-50 text-slate-800 hover:text-blue-600 font-mono font-bold text-[11px] border border-slate-200 transition-colors cursor-pointer text-center"
+                  className="py-1 px-1 rounded-lg bg-slate-900 hover:bg-blue-600/30 text-slate-200 hover:text-blue-400 font-mono font-bold text-[11px] border border-slate-800 hover:border-blue-500/50 transition-colors cursor-pointer text-center"
                 >
                   {m}
                 </button>
               ))}
             </div>
-            <p className="text-[10px] text-center text-slate-400">
+            <p className="text-[10px] text-center text-slate-500">
               Click buttons to rotate layers freely in 3D
             </p>
           </div>
@@ -301,14 +298,14 @@ export const CubeTimer: React.FC = () => {
       </div>
 
       {/* Bottom Buttons */}
-      <div className="grid grid-cols-2 gap-2 mt-2 pt-2 border-t border-slate-100">
+      <div className="grid grid-cols-2 gap-2 mt-2 pt-2 border-t border-slate-800/80">
         <button
           type="button"
           onClick={() => scrambleCube(20)}
           disabled={isScrambling}
-          className="py-1.5 px-3 bg-white hover:bg-slate-50 disabled:opacity-50 border border-slate-200 text-slate-700 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 shadow-2xs transition-all cursor-pointer"
+          className="py-1.5 px-3 bg-slate-900/90 hover:bg-slate-800 disabled:opacity-50 border border-slate-800 text-slate-300 hover:text-white rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 shadow-xs transition-all cursor-pointer"
         >
-          <Shuffle className={`w-3.5 h-3.5 text-slate-500 ${isScrambling ? 'animate-spin text-blue-600' : ''}`} />
+          <Shuffle className={`w-3.5 h-3.5 text-slate-400 ${isScrambling ? 'animate-spin text-blue-400' : ''}`} />
           <span>{isScrambling ? 'Shuffling...' : 'Scramble'}</span>
         </button>
 
@@ -316,10 +313,10 @@ export const CubeTimer: React.FC = () => {
           <button
             type="button"
             onClick={timerState === 'running' ? stopTimer : startTimer}
-            className={`py-1.5 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 shadow-xs transition-all cursor-pointer ${
+            className={`py-1.5 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 shadow-md transition-all cursor-pointer ${
               timerState === 'running'
-                ? 'bg-rose-600 hover:bg-rose-700 text-white shadow-rose-500/20'
-                : 'bg-blue-600 hover:bg-blue-700 text-white shadow-blue-500/20'
+                ? 'bg-rose-600 hover:bg-rose-500 text-white shadow-rose-500/30'
+                : 'bg-blue-600 hover:bg-blue-500 text-white shadow-blue-500/30'
             }`}
           >
             {timerState === 'running' ? (
@@ -338,9 +335,9 @@ export const CubeTimer: React.FC = () => {
           <button
             type="button"
             onClick={resetCube}
-            className="py-1.5 px-3 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 shadow-2xs transition-all cursor-pointer"
+            className="py-1.5 px-3 bg-slate-900/90 hover:bg-slate-800 border border-slate-800 text-slate-300 hover:text-white rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 shadow-xs transition-all cursor-pointer"
           >
-            <RotateCcw className="w-3.5 h-3.5 text-slate-500" />
+            <RotateCcw className="w-3.5 h-3.5 text-slate-400" />
             <span>Reset Solved</span>
           </button>
         )}

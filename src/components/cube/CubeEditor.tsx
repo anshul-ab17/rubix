@@ -48,9 +48,7 @@ export const CubeEditor: React.FC<CubeEditorProps> = ({ onOpenScanner }) => {
   };
 
   const applyPattern = (patternScramble: string) => {
-    // Apply preset pattern scramble
-    scrambleCube(0); // reset
-    // Apply moves via store
+    scrambleCube(0);
     useCubeStore.getState().resetCube();
     const moves = patternScramble.trim().split(/\s+/);
     for (const m of moves) {
@@ -61,17 +59,17 @@ export const CubeEditor: React.FC<CubeEditorProps> = ({ onOpenScanner }) => {
   };
 
   return (
-    <div className="h-full flex flex-col justify-between p-3.5 bg-white rounded-2xl border border-slate-200/80 shadow-xs select-none">
+    <div className="h-full flex flex-col justify-between p-3.5 bg-[#0f172a]/95 rounded-2xl border border-slate-800/80 shadow-md select-none">
       {/* Top Segmented Switcher */}
       <div>
-        <div className="grid grid-cols-3 gap-1 bg-slate-100/90 p-1 rounded-xl border border-slate-200/60 mb-3">
+        <div className="grid grid-cols-3 gap-1 bg-slate-900/90 p-1 rounded-xl border border-slate-800/80 mb-3">
           <button
             type="button"
             onClick={() => handleTabClick('build')}
             className={`py-1 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
               activeTab === 'build'
-                ? 'bg-white text-slate-900 shadow-xs font-bold'
-                : 'text-slate-500 hover:text-slate-800'
+                ? 'bg-blue-600 text-white shadow-xs font-bold'
+                : 'text-slate-400 hover:text-slate-200'
             }`}
           >
             Build
@@ -81,8 +79,8 @@ export const CubeEditor: React.FC<CubeEditorProps> = ({ onOpenScanner }) => {
             onClick={() => handleTabClick('scan')}
             className={`py-1 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
               activeTab === 'scan'
-                ? 'bg-white text-slate-900 shadow-xs font-bold'
-                : 'text-slate-500 hover:text-slate-800'
+                ? 'bg-blue-600 text-white shadow-xs font-bold'
+                : 'text-slate-400 hover:text-slate-200'
             }`}
           >
             Scan
@@ -92,8 +90,8 @@ export const CubeEditor: React.FC<CubeEditorProps> = ({ onOpenScanner }) => {
             onClick={() => handleTabClick('presets')}
             className={`py-1 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
               activeTab === 'presets'
-                ? 'bg-white text-slate-900 shadow-xs font-bold'
-                : 'text-slate-500 hover:text-slate-800'
+                ? 'bg-blue-600 text-white shadow-xs font-bold'
+                : 'text-slate-400 hover:text-slate-200'
             }`}
           >
             Presets
@@ -102,11 +100,11 @@ export const CubeEditor: React.FC<CubeEditorProps> = ({ onOpenScanner }) => {
 
         {/* Section Header */}
         <div className="mb-2">
-          <h2 className="text-sm font-bold text-slate-900 tracking-tight">
+          <h2 className="text-sm font-bold text-white tracking-tight">
             1. Set Cube State
           </h2>
           <p className="text-[11px] text-slate-400">
-            Click stickers to set the colors
+            Click stickers or select colors to edit
           </p>
         </div>
 
@@ -117,14 +115,14 @@ export const CubeEditor: React.FC<CubeEditorProps> = ({ onOpenScanner }) => {
 
         {/* Presets Dropdown if Open */}
         {showPresetsMenu && (
-          <div className="mb-2 p-2 bg-slate-50 border border-slate-200 rounded-xl shadow-md text-xs space-y-1">
+          <div className="mb-2 p-2 bg-slate-900 border border-slate-700 rounded-xl shadow-xl text-xs space-y-1">
             <span className="text-[10px] font-bold uppercase text-slate-400 px-1">Choose Preset Pattern</span>
             {PATTERNS.map((p) => (
               <button
                 key={p.name}
                 type="button"
                 onClick={() => applyPattern(p.scramble)}
-                className="w-full text-left px-2 py-1 rounded-md hover:bg-blue-50 text-slate-700 hover:text-blue-600 font-medium transition-colors"
+                className="w-full text-left px-2 py-1 rounded-md hover:bg-blue-600/20 text-slate-300 hover:text-blue-400 font-medium transition-colors"
               >
                 {p.name}
               </button>
@@ -185,21 +183,21 @@ export const CubeEditor: React.FC<CubeEditorProps> = ({ onOpenScanner }) => {
 
         {/* Validation Error Banner (if invalid) */}
         {!validation.isValid && (
-          <div className="mt-2 p-1.5 bg-amber-50 border border-amber-200 rounded-lg flex items-center gap-1.5 text-[11px] text-amber-800">
-            <AlertCircle className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+          <div className="mt-2 p-1.5 bg-amber-500/10 border border-amber-500/30 rounded-lg flex items-center gap-1.5 text-[11px] text-amber-300">
+            <AlertCircle className="w-3.5 h-3.5 text-amber-400 shrink-0" />
             <span className="truncate">{validation.errors[0] || 'Invalid cube state'}</span>
           </div>
         )}
       </div>
 
       {/* Bottom Action Buttons */}
-      <div className="grid grid-cols-2 gap-2 mt-2 pt-2 border-t border-slate-100">
+      <div className="grid grid-cols-2 gap-2 mt-2 pt-2 border-t border-slate-800/80">
         <button
           type="button"
           onClick={resetCube}
-          className="py-1.5 px-3 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 shadow-2xs transition-all cursor-pointer"
+          className="py-1.5 px-3 bg-slate-900/90 hover:bg-slate-800 border border-slate-800 text-slate-300 hover:text-white rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 shadow-xs transition-all cursor-pointer"
         >
-          <RotateCcw className="w-3.5 h-3.5 text-slate-500" />
+          <RotateCcw className="w-3.5 h-3.5 text-slate-400" />
           <span>Reset</span>
         </button>
 
@@ -207,9 +205,9 @@ export const CubeEditor: React.FC<CubeEditorProps> = ({ onOpenScanner }) => {
           type="button"
           onClick={() => scrambleCube(20)}
           disabled={isScrambling}
-          className="py-1.5 px-3 bg-white hover:bg-slate-50 disabled:opacity-50 border border-slate-200 text-slate-700 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 shadow-2xs transition-all cursor-pointer"
+          className="py-1.5 px-3 bg-slate-900/90 hover:bg-slate-800 disabled:opacity-50 border border-slate-800 text-slate-300 hover:text-white rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 shadow-xs transition-all cursor-pointer"
         >
-          <Shuffle className={`w-3.5 h-3.5 text-slate-500 ${isScrambling ? 'animate-spin text-blue-600' : ''}`} />
+          <Shuffle className={`w-3.5 h-3.5 text-slate-400 ${isScrambling ? 'animate-spin text-blue-400' : ''}`} />
           <span>{isScrambling ? 'Shuffling...' : 'Random Scramble'}</span>
         </button>
       </div>

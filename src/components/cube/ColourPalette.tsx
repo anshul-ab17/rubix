@@ -14,7 +14,6 @@ export const ColourPalette: React.FC<ColourPaletteProps> = ({ className = '' }) 
   const activeColor = useCubeStore((s) => s.activeColor);
   const setActiveColor = useCubeStore((s) => s.setActiveColor);
 
-  // Keyboard shortcut listener for 1-6 keys
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       const key = parseInt(e.key, 10);
@@ -40,14 +39,14 @@ export const ColourPalette: React.FC<ColourPaletteProps> = ({ className = '' }) 
             title={`${COLOR_NAME_MAP[color]} (${color})`}
             className={`
               relative w-7 h-7 sm:w-8 sm:h-8 rounded-full transition-all duration-150 cursor-pointer flex items-center justify-center
-              ${isSelected ? 'scale-110 shadow-md ring-2 ring-blue-500 ring-offset-2 ring-offset-white' : 'hover:scale-105 opacity-90 hover:opacity-100'}
+              ${isSelected ? 'scale-115 shadow-lg ring-2 ring-blue-400 ring-offset-2 ring-offset-[#0f172a]' : 'hover:scale-105 opacity-85 hover:opacity-100'}
             `}
             style={{
               backgroundColor: hex,
-              border: color === 'white' ? '1.5px solid #cbd5e1' : '1.5px solid rgba(0,0,0,0.12)',
+              border: color === 'white' ? '1.5px solid #475569' : '1.5px solid rgba(0,0,0,0.35)',
               boxShadow: isSelected
-                ? '0 2px 8px rgba(37, 99, 235, 0.25)'
-                : 'inset 0 1px 2px rgba(255,255,255,0.4), 0 1px 3px rgba(0,0,0,0.08)',
+                ? '0 0 12px rgba(59, 130, 246, 0.5), inset 0 1px 2px rgba(255,255,255,0.3)'
+                : 'inset 0 1px 2px rgba(255,255,255,0.2), 0 2px 4px rgba(0,0,0,0.3)',
             }}
           />
         );
