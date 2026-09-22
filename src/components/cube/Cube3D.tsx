@@ -156,7 +156,7 @@ export const Cube3D: React.FC<Cube3DProps> = ({
     // Axis and target angle
     let axis = new THREE.Vector3(0, 1, 0);
     let targetAngle = -Math.PI / 2;
-    let filterFn = (_pos: THREE.Vector3) => false;
+    let filterFn: (pos: THREE.Vector3) => boolean = () => false;
 
     if (face === 'U') {
       axis = new THREE.Vector3(0, 1, 0);
@@ -372,6 +372,13 @@ export const Cube3D: React.FC<Cube3DProps> = ({
       updateMaterials();
     }
   }, [cubeState, updateMaterials]);
+
+  // Animate layer rotation when highlightMove triggers
+  useEffect(() => {
+    if (highlightMove) {
+      animateLayerRotation(highlightMove);
+    }
+  }, [highlightMove, animateLayerRotation]);
 
   // Update Camera Preset when prop changes
   useEffect(() => {

@@ -4,8 +4,8 @@ import React, { useState } from 'react';
 import { useCubeStore } from '@/stores/cube-store';
 import { CubeFace } from './CubeFace';
 import { ColourPalette } from './ColourPalette';
-import { FaceName, CubeState, FaceState } from '@/types/cube';
-import { RotateCcw, Shuffle, Sparkles, AlertCircle } from 'lucide-react';
+import { FaceName, StandardMove } from '@/types/cube';
+import { RotateCcw, Shuffle, AlertCircle } from 'lucide-react';
 
 interface CubeEditorProps {
   onOpenScanner?: () => void;
@@ -22,7 +22,6 @@ const PATTERNS: { name: string; scramble: string }[] = [
 
 export const CubeEditor: React.FC<CubeEditorProps> = ({ onOpenScanner }) => {
   const cubeState = useCubeStore((s) => s.cubeState);
-  const setCubeState = useCubeStore((s) => s.setCubeState);
   const activeColor = useCubeStore((s) => s.activeColor);
   const setStickerColor = useCubeStore((s) => s.setStickerColor);
   const resetCube = useCubeStore((s) => s.resetCube);
@@ -54,7 +53,7 @@ export const CubeEditor: React.FC<CubeEditorProps> = ({ onOpenScanner }) => {
     useCubeStore.getState().resetCube();
     const moves = patternScramble.trim().split(/\s+/);
     for (const m of moves) {
-      useCubeStore.getState().applySingleMove(m as any);
+      useCubeStore.getState().applySingleMove(m as StandardMove);
     }
     setShowPresetsMenu(false);
     setActiveTab('build');

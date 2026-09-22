@@ -55,8 +55,6 @@ export const LiveSolvingCard: React.FC = () => {
     { label: '2.0x', speed: 350 },
   ];
 
-  const currentSpeedLabel = speedOptions.find((s) => s.speed === playbackSpeed)?.label || '1.0x';
-
   return (
     <div className="w-full bg-white rounded-2xl border border-slate-200/80 p-3 shadow-xs select-none">
       {/* Top Header Row */}
