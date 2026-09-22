@@ -4,6 +4,7 @@ import React, { useEffect, useRef, useCallback } from 'react';
 import * as THREE from 'three';
 import { FaceName, StandardMove, COLOR_HEX_MAP, FACE_NAMES } from '@/types/cube';
 import { useCubeStore } from '@/stores/cube-store';
+import { sound } from '@/utils/audio';
 import { RotateCcw } from 'lucide-react';
 
 interface Cube3DProps {
@@ -158,6 +159,7 @@ export const Cube3D: React.FC<Cube3DProps> = ({
     }
 
     animatingMoveRef.current = true;
+    sound.playCubeTurn();
     const face = move[0] as FaceName;
     const isPrime = move.includes("'");
     const isDouble = move.includes('2');
@@ -460,6 +462,7 @@ export const Cube3D: React.FC<Cube3DProps> = ({
             } else {
               setStickerColor(face, index, activeColor);
             }
+            sound.triggerHaptic(10);
           }
         }
       }

@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useCubeStore } from '@/stores/cube-store';
 import { StandardMove } from '@/types/cube';
+import { sound } from '@/utils/audio';
 import { Shuffle, Trophy, BarChart2, Flame, Play, Square, RotateCcw } from 'lucide-react';
 
 interface SolveRecord {
@@ -50,6 +51,7 @@ export const CubeTimer: React.FC = () => {
       const finalTime = performance.now() - startTimeRef.current;
       setTimeMs(finalTime);
       setTimerState('idle');
+      sound.playTimerFinish();
       if (animFrameRef.current) {
         cancelAnimationFrame(animFrameRef.current);
       }
@@ -69,6 +71,7 @@ export const CubeTimer: React.FC = () => {
   // Start Timer
   const startTimer = useCallback(() => {
     setTimerState('running');
+    sound.playTimerStart();
     startTimeRef.current = performance.now();
 
     const tick = () => {
@@ -191,10 +194,30 @@ export const CubeTimer: React.FC = () => {
         {activeTab === 'timer' ? (
           /* Large Digital Timer View */
           <div>
-            <div className="py-2.5 flex flex-col items-center justify-center text-center">
+            <div 
+              onPointerDown={(e) => {
+                if (timerState === 'running') {
+                  stopTimer();
+                } else if (timerState === 'idle') {
+                  setTimerState('holding');
+                  holdTimeoutRef.current = setTimeout(() => {
+                    setTimerState('ready');
+                  }, 300);
+                }
+              }}
+              onPointerUp={() => {
+                if (holdTimeoutRef.current) clearTimeout(holdTimeoutRef.current);
+                if (timerState === 'ready') {
+                  startTimer();
+                } else if (timerState === 'holding') {
+                  setTimerState('idle');
+                }
+              }}
+              className="py-3 px-4 rounded-2xl bg-slate-50 border border-slate-200/80 cursor-pointer active:bg-slate-100 flex flex-col items-center justify-center text-center transition-all select-none touch-none"
+            >
               <span
                 className={`
-                  text-3xl sm:text-4xl font-extrabold font-mono tracking-tight transition-colors duration-150
+                  text-3xl sm:text-4xl font-extrabold font-mono tracking-tight transition-all duration-150
                   ${
                     timerState === 'ready'
                       ? 'text-emerald-500 scale-105'
@@ -208,14 +231,14 @@ export const CubeTimer: React.FC = () => {
               >
                 {formatTime(timeMs)}
               </span>
-              <span className="text-[11px] text-slate-400 mt-0.5 font-medium">
+              <span className="text-[11px] text-slate-400 mt-1 font-medium">
                 {timerState === 'running'
-                  ? 'Spacebar or tap Stop to finish'
+                  ? 'Tap anywhere or Spacebar to STOP'
                   : timerState === 'ready'
                   ? 'Release to START!'
                   : timerState === 'holding'
                   ? 'Hold ready...'
-                  : 'Press Spacebar to start'}
+                  : 'Hold screen or Spacebar to start'}
               </span>
             </div>
 
