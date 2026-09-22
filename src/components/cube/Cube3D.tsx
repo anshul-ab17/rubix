@@ -144,15 +144,18 @@ export const Cube3D: React.FC<Cube3DProps> = ({
       return;
     }
 
-    // If an animation is already in progress, finalize it cleanly first
+    // If an animation is already in progress, finalize it cleanly first without drift
     if (activePivotRef.current && cubeGroupRef.current) {
       const oldPivot = activePivotRef.current;
       oldPivot.children.slice().forEach((child) => {
         cubeGroupRef.current?.attach(child);
-        child.position.x = Math.round(child.position.x);
-        child.position.y = Math.round(child.position.y);
-        child.position.z = Math.round(child.position.z);
+        child.position.set(
+          Math.round(child.position.x),
+          Math.round(child.position.y),
+          Math.round(child.position.z)
+        );
         child.rotation.set(0, 0, 0);
+        child.updateMatrixWorld(true);
       });
       cubeGroupRef.current.remove(oldPivot);
       activePivotRef.current = null;
@@ -200,6 +203,7 @@ export const Cube3D: React.FC<Cube3DProps> = ({
 
     const layerCubies = cubiesRef.current.filter((c) => filterFn(c.position));
     const pivot = new THREE.Group();
+    pivot.rotation.set(0, 0, 0);
     activePivotRef.current = pivot;
     cubeGroupRef.current.add(pivot);
 
@@ -207,7 +211,7 @@ export const Cube3D: React.FC<Cube3DProps> = ({
       pivot.attach(c);
     });
 
-    const duration = Math.max(70, speedMs);
+    const duration = Math.max(65, speedMs);
     const startTime = performance.now();
 
     const animate = (time: number) => {
@@ -215,8 +219,9 @@ export const Cube3D: React.FC<Cube3DProps> = ({
 
       const elapsed = time - startTime;
       const progress = Math.min(1, elapsed / duration);
-      // High quality cubic ease-out with mechanical snap
-      const ease = 1 - Math.pow(1 - progress, 3.5);
+      
+      // Clean cubic-quintic ease-out with snappy mechanical finish
+      const ease = 1 - Math.pow(1 - progress, 3.6);
       
       pivot.setRotationFromAxisAngle(axis, targetAngle * ease);
 
@@ -224,15 +229,18 @@ export const Cube3D: React.FC<Cube3DProps> = ({
         requestAnimationFrame(animate);
       } else {
         pivot.setRotationFromAxisAngle(axis, targetAngle);
-        pivot.updateMatrixWorld();
+        pivot.updateMatrixWorld(true);
 
-        // Re-attach cubies back to root cube group with accurate integer alignment
+        // Re-attach cubies back to root cube group with exact integer coordinates
         layerCubies.forEach((c) => {
           cubeGroupRef.current?.attach(c);
-          c.position.x = Math.round(c.position.x);
-          c.position.y = Math.round(c.position.y);
-          c.position.z = Math.round(c.position.z);
+          c.position.set(
+            Math.round(c.position.x),
+            Math.round(c.position.y),
+            Math.round(c.position.z)
+          );
           c.rotation.set(0, 0, 0);
+          c.updateMatrixWorld(true);
         });
 
         cubeGroupRef.current?.remove(pivot);
@@ -248,21 +256,38 @@ export const Cube3D: React.FC<Cube3DProps> = ({
     requestAnimationFrame(animate);
   }, [updateMaterials]);
 
-  // Set Camera Preset
+  // Set Camera Preset with smooth camera interpolation
   const setCameraView = useCallback((preset: 'iso' | 'front' | 'top' | 'right') => {
     if (!cameraRef.current) return;
     const camera = cameraRef.current;
     
+    let targetPos = new THREE.Vector3(4.5, 3.8, 5.5);
     if (preset === 'iso') {
-      camera.position.set(4.5, 3.8, 5.5);
+      targetPos = new THREE.Vector3(4.5, 3.8, 5.5);
     } else if (preset === 'front') {
-      camera.position.set(0, 0, 7.5);
+      targetPos = new THREE.Vector3(0, 0, 7.5);
     } else if (preset === 'top') {
-      camera.position.set(0, 7.5, 0.01);
+      targetPos = new THREE.Vector3(0, 7.5, 0.01);
     } else if (preset === 'right') {
-      camera.position.set(7.5, 0, 0);
+      targetPos = new THREE.Vector3(7.5, 0, 0);
     }
-    camera.lookAt(0, 0, 0);
+
+    const startPos = camera.position.clone();
+    const startTime = performance.now();
+    const duration = 280;
+
+    const animateCamera = (time: number) => {
+      const elapsed = time - startTime;
+      const progress = Math.min(1, elapsed / duration);
+      const ease = 1 - Math.pow(1 - progress, 3);
+      camera.position.lerpVectors(startPos, targetPos, ease);
+      camera.lookAt(0, -0.05, 0);
+
+      if (progress < 1) {
+        requestAnimationFrame(animateCamera);
+      }
+    };
+    requestAnimationFrame(animateCamera);
   }, []);
 
   // Initialize Three.js scene

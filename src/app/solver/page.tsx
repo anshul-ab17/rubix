@@ -15,7 +15,6 @@ import { StandardMove } from '@/types/cube';
 import { sound } from '@/utils/audio';
 import { 
   BookOpen, 
-  ArrowLeft,
   Volume2,
   VolumeX,
   Keyboard,
@@ -107,20 +106,9 @@ export default function SolverPage() {
     <div className="min-h-screen lg:h-screen lg:max-h-screen flex flex-col justify-between bg-slate-100/70 text-slate-900 select-none overflow-x-hidden font-sans">
       {/* Top Navbar */}
       <header className="h-14 shrink-0 bg-white/95 border-b border-slate-200/80 px-3 sm:px-6 flex items-center justify-between z-30 sticky top-0">
-        {/* Left: Rubix Brand & Back to Home */}
+        {/* Left: Rubix Brand */}
         <div className="flex items-center gap-2 sm:gap-3">
-          <Link
-            href="/"
-            className="flex items-center gap-1 text-slate-500 hover:text-slate-900 text-xs font-semibold py-1 px-2 rounded-lg hover:bg-slate-100 transition-colors"
-            title="Back to Landing Page"
-          >
-            <ArrowLeft className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">Home</span>
-          </Link>
-
-          <div className="h-4 w-px bg-slate-200 hidden sm:block" />
-
-          <Link href="/" className="flex items-center gap-2">
+          <div className="flex items-center gap-2">
             <RubixLogo size={28} />
             <div>
               <div className="flex items-center gap-1.5 leading-none">
@@ -135,7 +123,7 @@ export default function SolverPage() {
                 Scan &bull; Build &bull; Solve Step by Step
               </p>
             </div>
-          </Link>
+          </div>
         </div>
 
         {/* Center: Desktop Navigation Links */}
