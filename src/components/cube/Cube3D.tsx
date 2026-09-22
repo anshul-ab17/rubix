@@ -75,6 +75,7 @@ export const Cube3D: React.FC<Cube3DProps> = ({
   className = '',
   autoRotate = false,
   cameraPreset = 'iso',
+  highlightMove,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const cubeState = useCubeStore((s) => s.cubeState);
