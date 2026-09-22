@@ -9,9 +9,7 @@ import confetti from 'canvas-confetti';
 import { 
   CheckCircle2, 
   Sparkles, 
-  ArrowRight, 
   RotateCcw, 
-  MoveRight, 
   HelpCircle, 
   Hand, 
   Eye, 
@@ -49,7 +47,7 @@ export const SolutionViewer: React.FC = () => {
           origin: { y: 0.6 },
           colors: ['#22c55e', '#3b82f6', '#facc15', '#ef4444', '#f97316', '#ffffff'],
         });
-      } catch (e) {
+      } catch {
         // ignore in tests/ssr
       }
     }

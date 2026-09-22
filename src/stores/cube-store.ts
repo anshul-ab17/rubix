@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { CubeColor, CubeState, FaceName, StandardMove, SolveStep, InputMode, ScannedFace, ValidationResult, FACE_NAMES } from '@/types/cube';
+import { CubeColor, CubeState, FaceName, FaceState, StandardMove, InputMode, ScannedFace, ValidationResult, FACE_NAMES } from '@/types/cube';
 import { createSolvedCube, cloneCubeState } from '@/lib/cube/cube-state';
 import { applyMove, generateScramble } from '@/lib/cube/cube-moves';
 import { validateCubeState } from '@/lib/cube/cube-validator';
@@ -284,7 +284,7 @@ export const useCubeStore = create<CubeStore>((set, get) => ({
     for (const face of FACE_NAMES) {
       const scanned = scannedFaces[face];
       if (scanned && scanned.colors.length === 9) {
-        newState[face] = [...scanned.colors] as any;
+        newState[face] = [...scanned.colors] as FaceState;
       }
     }
     const validation = validateCubeState(newState);

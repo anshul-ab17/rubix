@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useRef, useState, useEffect, useCallback } from 'react';
-import { Camera, RefreshCw, AlertCircle, Check } from 'lucide-react';
-import { extractFaceColorsFromCanvas, RGB } from '@/lib/scanner/colour-detection';
+import { Camera, RefreshCw, AlertCircle } from 'lucide-react';
+import { extractFaceColorsFromCanvas } from '@/lib/scanner/colour-detection';
 import { CubeColor } from '@/types/cube';
 
 interface CameraCaptureProps {
@@ -12,7 +12,7 @@ interface CameraCaptureProps {
 export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [stream, setStream] = useState<MediaStream | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
   const [cameraError, setCameraError] = useState<string | null>(null);
   const [isReady, setIsReady] = useState(false);
 
@@ -21,8 +21,8 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture }) => {
     setCameraError(null);
     setIsReady(false);
     try {
-      if (stream) {
-        stream.getTracks().forEach((t) => t.stop());
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach((t) => t.stop());
       }
 
       const mediaStream = await navigator.mediaDevices.getUserMedia({
@@ -33,21 +33,44 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture }) => {
         },
       });
 
-      setStream(mediaStream);
+      streamRef.current = mediaStream;
       if (videoRef.current) {
         videoRef.current.srcObject = mediaStream;
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Camera access error:', err);
       setCameraError('Unable to access camera. Please allow camera permissions or use Image Upload.');
     }
-  }, [stream]);
+  }, []);
 
   useEffect(() => {
-    startCamera();
+    let cancelled = false;
+    navigator.mediaDevices?.getUserMedia({
+      video: {
+        facingMode: 'environment',
+        width: { ideal: 640 },
+        height: { ideal: 640 },
+      },
+    }).then((mediaStream) => {
+      if (cancelled) {
+        mediaStream.getTracks().forEach((t) => t.stop());
+        return;
+      }
+      streamRef.current = mediaStream;
+      if (videoRef.current) {
+        videoRef.current.srcObject = mediaStream;
+      }
+    }).catch((err: unknown) => {
+      if (cancelled) return;
+      console.error('Camera access error:', err);
+      setCameraError('Unable to access camera. Please allow camera permissions or use Image Upload.');
+    });
+
     return () => {
-      if (stream) {
-        stream.getTracks().forEach((t) => t.stop());
+      cancelled = true;
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach((t) => t.stop());
+        streamRef.current = null;
       }
     };
   }, []);

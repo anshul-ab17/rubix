@@ -1,10 +1,10 @@
 'use client';
 
-import React, { useEffect, useRef, useState, useCallback } from 'react';
+import React, { useEffect, useRef, useCallback } from 'react';
 import * as THREE from 'three';
-import { CubeColor, CubeState, FaceName, StandardMove, COLOR_HEX_MAP, FACE_NAMES } from '@/types/cube';
+import { FaceName, StandardMove, COLOR_HEX_MAP, FACE_NAMES } from '@/types/cube';
 import { useCubeStore } from '@/stores/cube-store';
-import { Maximize2, RotateCcw, Eye, Compass } from 'lucide-react';
+import { RotateCcw, Compass } from 'lucide-react';
 
 interface Cube3DProps {
   interactive?: boolean;
@@ -87,7 +87,6 @@ export const Cube3D: React.FC<Cube3DProps> = ({
   const isDraggingRef = useRef(false);
   const previousMousePositionRef = useRef({ x: 0, y: 0 });
   const touchStartRef = useRef({ x: 0, y: 0 });
-  const animatingMoveRef = useRef(false);
 
   // Initialize Three.js scene
   useEffect(() => {

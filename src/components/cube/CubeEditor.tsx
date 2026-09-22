@@ -9,14 +9,12 @@ import { FaceName } from '@/types/cube';
 import { 
   RotateCcw, 
   Shuffle, 
-  Play, 
   CheckCircle2, 
   AlertTriangle, 
   Sparkles, 
   Box, 
   Grid3X3,
-  PaintBucket,
-  Info
+  PaintBucket
 } from 'lucide-react';
 
 export const CubeEditor: React.FC = () => {
@@ -33,7 +31,6 @@ export const CubeEditor: React.FC = () => {
   const solutionResult = useCubeStore((s) => s.solutionResult);
 
   const [viewMode, setViewMode] = useState<'both' | '2d' | '3d'>('both');
-  const [selectedFaceToFill, setSelectedFaceToFill] = useState<FaceName | null>(null);
 
   const handleStickerClick = (face: FaceName, index: number) => {
     setStickerColor(face, index, activeColor);

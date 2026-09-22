@@ -197,7 +197,7 @@ export function extractFaceColorsFromCanvas(
         colors.push(classification.color);
         confidences.push(classification.confidence);
         rawRgb.push(avgRgb);
-      } catch (err) {
+      } catch {
         colors.push('white');
         confidences.push(0.5);
         rawRgb.push({ r: 255, g: 255, b: 255 });

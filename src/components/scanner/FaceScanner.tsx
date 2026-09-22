@@ -5,7 +5,7 @@ import { useCubeStore } from '@/stores/cube-store';
 import { CameraCapture } from './CameraCapture';
 import { ImageUploader } from './ImageUploader';
 import { CubeFace } from '@/components/cube/CubeFace';
-import { FaceName, CubeColor, COLOR_HEX_MAP, COLOR_NAME_MAP, FACE_FULL_NAMES } from '@/types/cube';
+import { FaceName, CubeColor, COLOR_HEX_MAP, COLOR_NAME_MAP } from '@/types/cube';
 import { 
   Camera, 
   Upload, 

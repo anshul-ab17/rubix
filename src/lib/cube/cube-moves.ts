@@ -1,5 +1,5 @@
-import { CubeState, StandardMove, FaceState, FaceName } from '@/types/cube';
-import { cloneCubeState, rotateFaceCW, rotateFaceCCW, rotateFace180 } from './cube-state';
+import { CubeState, StandardMove, FaceName } from '@/types/cube';
+import { cloneCubeState, rotateFaceCW, rotateFaceCCW } from './cube-state';
 
 export function applyMove(state: CubeState, move: StandardMove): CubeState {
   const next = cloneCubeState(state);

@@ -37,7 +37,7 @@ export const ColourPalette: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-6 gap-2 sm:gap-3">
-        {COLORS.map((color, index) => {
+        {COLORS.map((color) => {
           const isSelected = activeColor === color;
           const count = validation.colorCounts[color] || 0;
           const isComplete = count === 9;

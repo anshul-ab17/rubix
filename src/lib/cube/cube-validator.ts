@@ -1,4 +1,4 @@
-import { CubeColor, CubeState, FaceName, ValidationResult, COLOR_NAME_MAP, FACE_FULL_NAMES, FACE_NAMES } from '@/types/cube';
+import { CubeColor, CubeState, FaceName, ValidationResult, COLOR_NAME_MAP, FACE_NAMES } from '@/types/cube';
 
 export function validateCubeState(state: CubeState): ValidationResult {
   const errors: string[] = [];

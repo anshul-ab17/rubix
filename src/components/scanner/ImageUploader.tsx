@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useRef, useState } from 'react';
-import { Upload, Image as ImageIcon, Check } from 'lucide-react';
+import { Upload } from 'lucide-react';
 import { extractFaceColorsFromCanvas } from '@/lib/scanner/colour-detection';
 import { CubeColor } from '@/types/cube';
 

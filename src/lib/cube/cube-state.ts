@@ -1,4 +1,4 @@
-import { CubeColor, CubeState, FaceName, FaceState, DEFAULT_FACE_COLORS, FACE_NAMES } from '@/types/cube';
+import { CubeState, FaceState, DEFAULT_FACE_COLORS, FACE_NAMES } from '@/types/cube';
 
 export function createSolvedCube(): CubeState {
   const cube: Partial<CubeState> = {};

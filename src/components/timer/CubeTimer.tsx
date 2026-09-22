@@ -5,14 +5,11 @@ import { useCubeStore } from '@/stores/cube-store';
 import { Cube3D } from '@/components/cube/Cube3D';
 import { StandardMove } from '@/types/cube';
 import { 
-  Timer, 
   Shuffle, 
   RotateCcw, 
   Trophy, 
   Flame, 
-  Trash2, 
-  Sparkles,
-  Play
+  Trash2
 } from 'lucide-react';
 
 interface SolveRecord {
@@ -39,7 +36,6 @@ export const CubeTimer: React.FC = () => {
 
   const [timerState, setTimerState] = useState<'idle' | 'holding' | 'ready' | 'running' | 'inspection'>('idle');
   const [timeMs, setTimeMs] = useState(0);
-  const [inspectionSeconds, setInspectionSeconds] = useState(15);
   const [history, setHistory] = useState<SolveRecord[]>([]);
 
   const startTimeRef = useRef<number>(0);

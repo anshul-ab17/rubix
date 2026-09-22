@@ -4,7 +4,7 @@ import { parseMovesToSteps } from '@/lib/cube/cube-notation';
 import { validateCubeState } from '@/lib/cube/cube-validator';
 
 let solverInitialized = false;
-let CubeLib: any = null;
+let CubeLib: typeof import('cubejs').default | null = null;
 
 async function getCubeSolver() {
   if (!CubeLib) {
@@ -109,15 +109,16 @@ export async function solveCube(state: CubeState): Promise<SolveResult> {
       moveCount: validMoves.length,
       notationString: validMoves.join(' '),
     };
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error('Solve error:', err);
+    const errorMessage = err instanceof Error ? err.message : 'Failed to calculate solution. Please check your cube configuration.';
     return {
       success: false,
       moves: [],
       steps: [],
       moveCount: 0,
       notationString: '',
-      error: err?.message || 'Failed to calculate solution. Please check your cube configuration.',
+      error: errorMessage,
     };
   }
 }

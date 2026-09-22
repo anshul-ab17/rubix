@@ -7,7 +7,6 @@ interface CubeFaceProps {
   face: FaceName;
   colors: CubeColor[];
   onStickerClick?: (index: number) => void;
-  activeColor?: CubeColor;
   highlightIndex?: number | null;
   size?: 'sm' | 'md' | 'lg';
   showLabels?: boolean;
@@ -17,7 +16,6 @@ export const CubeFace: React.FC<CubeFaceProps> = ({
   face,
   colors,
   onStickerClick,
-  activeColor,
   highlightIndex = null,
   size = 'md',
   showLabels = true,

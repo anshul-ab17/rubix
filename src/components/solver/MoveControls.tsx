@@ -7,7 +7,6 @@ import {
   ChevronLeft, 
   ChevronRight, 
   RotateCcw, 
-  FastForward, 
   Gauge 
 } from 'lucide-react';
 

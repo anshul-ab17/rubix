@@ -12,16 +12,13 @@ import {
   Camera, 
   Sparkles, 
   Timer, 
-  BookOpen, 
-  Shuffle, 
-  HelpCircle
+  BookOpen
 } from 'lucide-react';
 import { InputMode } from '@/types/cube';
 
 export default function Home() {
   const inputMode = useCubeStore((s) => s.inputMode);
   const setInputMode = useCubeStore((s) => s.setInputMode);
-  const scrambleCube = useCubeStore((s) => s.scrambleCube);
   const solutionResult = useCubeStore((s) => s.solutionResult);
 
   const [isGuideOpen, setIsGuideOpen] = useState(false);
