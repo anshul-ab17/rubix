@@ -4,6 +4,14 @@ import './globals.css';
 export const metadata: Metadata = {
   title: "Rubix — 3D Rubik's Cube Solver & Speedcubing Studio",
   description: "Optimal Kociemba Two-Phase 3D Rubik's Cube Solver, Computer Vision Scanner, and WCA Speed Timer.",
+  icons: {
+    icon: [
+      { url: '/icon.svg', type: 'image/svg+xml' },
+    ],
+    apple: [
+      { url: '/icon.svg', type: 'image/svg+xml' },
+    ],
+  },
 };
 
 export default function RootLayout({
