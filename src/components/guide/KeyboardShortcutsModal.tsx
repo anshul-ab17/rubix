@@ -45,17 +45,17 @@ export const KeyboardShortcutsModal: React.FC<KeyboardShortcutsModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-fade-in">
-      <div className="relative w-full max-w-lg bg-[#0f172a] border border-slate-800 rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 dark:bg-black/70 backdrop-blur-sm animate-fade-in">
+      <div className="relative w-full max-w-lg bg-white dark:bg-[#0f172a] border border-slate-200 dark:border-slate-800 rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] transition-colors duration-200">
         {/* Header */}
-        <div className="p-4 sm:p-5 border-b border-slate-800 flex items-center justify-between bg-[#0f172a]">
+        <div className="p-4 sm:p-5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-white dark:bg-[#0f172a]">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400">
+            <div className="w-9 h-9 rounded-xl bg-blue-50 dark:bg-blue-500/10 border border-blue-200 dark:border-blue-500/20 flex items-center justify-center text-blue-600 dark:text-blue-400">
               <Command className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="text-base font-bold text-white">Keyboard Shortcuts</h3>
-              <p className="text-xs text-slate-400">
+              <h3 className="text-base font-bold text-slate-900 dark:text-white">Keyboard Shortcuts</h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400">
                 Speed up your solving and practice workflow
               </p>
             </div>
@@ -63,27 +63,27 @@ export const KeyboardShortcutsModal: React.FC<KeyboardShortcutsModalProps> = ({
 
           <button
             onClick={onClose}
-            className="p-1.5 text-slate-400 hover:text-white bg-slate-800 hover:bg-slate-700 rounded-xl transition-all cursor-pointer"
+            className="p-1.5 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 rounded-xl transition-all cursor-pointer"
           >
             <X className="w-4 h-4" />
           </button>
         </div>
 
         {/* List of shortcuts */}
-        <div className="p-5 overflow-y-auto space-y-4 text-xs text-slate-300">
+        <div className="p-5 overflow-y-auto space-y-4 text-xs text-slate-700 dark:text-slate-300">
           {SHORTCUTS.map((section) => (
             <div key={section.category}>
-              <h4 className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-2">
+              <h4 className="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-2">
                 {section.category}
               </h4>
               <div className="space-y-1.5">
                 {section.items.map((item) => (
                   <div
                     key={item.key}
-                    className="flex items-center justify-between p-2 rounded-xl bg-slate-900/90 border border-slate-800"
+                    className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 dark:bg-slate-900/90 border border-slate-200/80 dark:border-slate-800"
                   >
-                    <span className="text-slate-300 font-medium">{item.desc}</span>
-                    <kbd className="px-2 py-1 bg-slate-800 border border-slate-700 rounded-lg shadow-sm font-mono font-bold text-blue-300 text-[11px] shrink-0 ml-2">
+                    <span className="text-slate-700 dark:text-slate-300 font-medium">{item.desc}</span>
+                    <kbd className="px-2 py-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-2xs font-mono font-bold text-blue-600 dark:text-blue-300 text-[11px] shrink-0 ml-2">
                       {item.key}
                     </kbd>
                   </div>
