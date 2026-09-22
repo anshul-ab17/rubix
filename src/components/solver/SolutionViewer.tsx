@@ -1,287 +1,214 @@
 'use client';
 
-import React, { useEffect, useCallback } from 'react';
+import React, { useState } from 'react';
 import { useCubeStore } from '@/stores/cube-store';
-import { Cube3D } from '@/components/cube/Cube3D';
-import { ProgressBar } from './ProgressBar';
-import { MoveControls } from './MoveControls';
-import confetti from 'canvas-confetti';
-import { 
-  CheckCircle2, 
-  Sparkles, 
-  RotateCcw, 
-  HelpCircle, 
-  Hand, 
-  Eye, 
-  Edit3,
-  Layers
-} from 'lucide-react';
+import { Copy, Check, Play, Download, Sparkles, AlertCircle } from 'lucide-react';
 
-export const SolutionViewer: React.FC = () => {
+interface SolutionViewerProps {
+  onOpenGuide?: () => void;
+}
+
+export const SolutionViewer: React.FC<SolutionViewerProps> = ({ onOpenGuide }) => {
   const solutionResult = useCubeStore((s) => s.solutionResult);
-  const currentStepIndex = useCubeStore((s) => s.currentStepIndex);
-  const isPlaying = useCubeStore((s) => s.isPlaying);
-  const playbackSpeed = useCubeStore((s) => s.playbackSpeed);
-  const nextStep = useCubeStore((s) => s.nextStep);
-  const prevStep = useCubeStore((s) => s.prevStep);
+  const isSolving = useCubeStore((s) => s.isSolving);
+  const solveCurrentCube = useCubeStore((s) => s.solveCurrentCube);
   const togglePlay = useCubeStore((s) => s.togglePlay);
-  const setIsPlaying = useCubeStore((s) => s.setIsPlaying);
-  const setCurrentStepIndex = useCubeStore((s) => s.setCurrentStepIndex);
-  const setPlaybackSpeed = useCubeStore((s) => s.setPlaybackSpeed);
-  const setInputMode = useCubeStore((s) => s.setInputMode);
-  const resetCube = useCubeStore((s) => s.resetCube);
+  const isPlaying = useCubeStore((s) => s.isPlaying);
+  const validation = useCubeStore((s) => s.validation);
 
-  const steps = solutionResult?.steps || [];
-  const totalSteps = steps.length;
-  const isCompleted = currentStepIndex >= totalSteps && totalSteps > 0;
-  const currentStep = currentStepIndex > 0 && currentStepIndex <= totalSteps ? steps[currentStepIndex - 1] : null;
+  const [activeTab, setActiveTab] = useState<'moves' | 'steps' | 'guide'>('moves');
+  const [copied, setCopied] = useState(false);
 
-  // Trigger celebration confetti on solve completion
-  useEffect(() => {
-    if (isCompleted) {
-      setIsPlaying(false);
-      try {
-        confetti({
-          particleCount: 120,
-          spread: 80,
-          origin: { y: 0.6 },
-          colors: ['#22c55e', '#3b82f6', '#facc15', '#ef4444', '#f97316', '#ffffff'],
-        });
-      } catch {
-        // ignore in tests/ssr
-      }
+  const moves = solutionResult?.moves || [];
+  const moveCount = moves.length;
+  const notationString = solutionResult?.notationString || '';
+
+  const handleCopy = async () => {
+    if (!notationString) return;
+    try {
+      await navigator.clipboard.writeText(notationString);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // fallback
     }
-  }, [isCompleted, setIsPlaying]);
+  };
 
-  // Autoplay timer effect
-  useEffect(() => {
-    let timer: NodeJS.Timeout | null = null;
-    if (isPlaying && currentStepIndex < totalSteps) {
-      timer = setTimeout(() => {
-        nextStep();
-      }, playbackSpeed);
-    } else if (currentStepIndex >= totalSteps) {
-      setIsPlaying(false);
-    }
+  const handleExport = () => {
+    if (!notationString) return;
+    const blob = new Blob([notationString], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `rubix-solution-${Date.now()}.txt`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
 
-    return () => {
-      if (timer) clearTimeout(timer);
-    };
-  }, [isPlaying, currentStepIndex, totalSteps, playbackSpeed, nextStep, setIsPlaying]);
-
-  // Global Keyboard Navigation
-  const handleKeyDown = useCallback(
-    (e: KeyboardEvent) => {
-      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
-
-      if (e.code === 'Space') {
-        e.preventDefault();
-        togglePlay();
-      } else if (e.code === 'ArrowRight') {
-        e.preventDefault();
-        nextStep();
-      } else if (e.code === 'ArrowLeft') {
-        e.preventDefault();
-        prevStep();
+  const handleAnimateClick = async () => {
+    if (!solutionResult) {
+      const ok = await solveCurrentCube();
+      if (ok) {
+        useCubeStore.getState().setIsPlaying(true);
       }
-    },
-    [togglePlay, nextStep, prevStep]
-  );
+    } else {
+      togglePlay();
+    }
+  };
 
-  useEffect(() => {
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [handleKeyDown]);
-
-  if (!solutionResult || !solutionResult.success) {
-    return (
-      <div className="w-full max-w-xl mx-auto p-8 bg-slate-900/80 backdrop-blur-xl border border-slate-700/60 rounded-3xl text-center flex flex-col items-center gap-4">
-        <Layers className="w-12 h-12 text-slate-500" />
-        <h3 className="text-xl font-bold text-white">No Active Solution</h3>
-        <p className="text-sm text-slate-400">
-          Please build or scan a cube state and click &ldquo;Solve Cube&rdquo; to generate step-by-step instructions.
-        </p>
-        <button
-          onClick={() => setInputMode('edit')}
-          className="px-6 py-2.5 bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold rounded-xl transition-all shadow-lg shadow-cyan-500/20"
-        >
-          Open Cube Editor
-        </button>
-      </div>
-    );
-  }
+  // Estimated solving time calculation (~2.5s per move for human average)
+  const estSeconds = Math.max(10, Math.round(moveCount * 2.5));
+  const estTimeStr = estSeconds < 60 ? `~${estSeconds}s` : `~${Math.ceil(estSeconds / 60)} min`;
 
   return (
-    <div className="w-full max-w-5xl mx-auto flex flex-col gap-6">
-      {/* Top Header Card */}
-      <div className="flex flex-wrap items-center justify-between gap-4 bg-slate-900/80 backdrop-blur-xl border border-slate-700/60 p-4 rounded-2xl shadow-xl">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500 to-teal-500 flex items-center justify-center text-slate-950 font-bold shadow-md">
-            <Sparkles className="w-5 h-5" />
-          </div>
+    <div className="h-full flex flex-col justify-between p-3.5 bg-white rounded-2xl border border-slate-200/80 shadow-xs select-none">
+      <div>
+        {/* Top Header & Copy */}
+        <div className="flex items-start justify-between mb-2">
           <div>
-            <h2 className="text-lg font-bold text-white">Solution Guide</h2>
-            <p className="text-xs text-slate-400">
-              Optimal Two-Phase Algorithm &bull; <span className="text-cyan-400 font-semibold">{totalSteps} moves total</span>
+            <h2 className="text-sm font-bold text-slate-900 tracking-tight">
+              3. Solution &amp; Steps
+            </h2>
+            <p className="text-[11px] text-slate-400">
+              Optimized solution using Kociemba algorithm
             </p>
           </div>
+          <button
+            type="button"
+            onClick={handleCopy}
+            disabled={!notationString}
+            className="p-1.5 text-slate-400 hover:text-slate-700 disabled:opacity-30 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer"
+            title="Copy Solution"
+          >
+            {copied ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
+          </button>
         </div>
 
-        <div className="flex items-center gap-2">
+        {/* Segmented Tab Switcher */}
+        <div className="grid grid-cols-3 gap-1 bg-slate-100/90 p-1 rounded-xl border border-slate-200/60 mb-2.5">
           <button
-            onClick={() => setInputMode('edit')}
-            className="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-xl text-xs sm:text-sm font-semibold text-slate-200 flex items-center gap-1.5 transition-all cursor-pointer"
+            type="button"
+            onClick={() => setActiveTab('moves')}
+            className={`py-1 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
+              activeTab === 'moves'
+                ? 'bg-white text-slate-900 shadow-xs font-bold'
+                : 'text-slate-500 hover:text-slate-800'
+            }`}
           >
-            <Edit3 className="w-4 h-4 text-cyan-400" />
-            <span>Edit Cube</span>
+            Moves
           </button>
           <button
+            type="button"
+            onClick={() => setActiveTab('steps')}
+            className={`py-1 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
+              activeTab === 'steps'
+                ? 'bg-white text-slate-900 shadow-xs font-bold'
+                : 'text-slate-500 hover:text-slate-800'
+            }`}
+          >
+            Step by Step
+          </button>
+          <button
+            type="button"
             onClick={() => {
-              resetCube();
-              setInputMode('edit');
+              setActiveTab('guide');
+              if (onOpenGuide) onOpenGuide();
             }}
-            className="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-xl text-xs sm:text-sm font-semibold text-slate-200 flex items-center gap-1.5 transition-all cursor-pointer"
+            className={`py-1 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
+              activeTab === 'guide'
+                ? 'bg-white text-slate-900 shadow-xs font-bold'
+                : 'text-slate-500 hover:text-slate-800'
+            }`}
           >
-            <RotateCcw className="w-4 h-4 text-slate-400" />
-            <span>New Solve</span>
+            Beginner Guide
           </button>
+        </div>
+
+        {/* Move Notation Box */}
+        <div className="p-2.5 bg-slate-50/80 border border-slate-200/70 rounded-xl min-h-[58px] flex items-center justify-center text-center mb-2.5">
+          {solutionResult ? (
+            <p className="font-mono text-xs font-bold tracking-wider text-slate-800 leading-relaxed break-words line-clamp-3">
+              {notationString || 'Solved! No moves needed.'}
+            </p>
+          ) : isSolving ? (
+            <div className="flex items-center gap-2 text-xs text-blue-600 font-medium animate-pulse">
+              <Sparkles className="w-4 h-4 animate-spin" />
+              <span>Computing optimal Two-Phase solution...</span>
+            </div>
+          ) : !validation.isValid ? (
+            <div className="flex items-center gap-1.5 text-xs text-amber-700">
+              <AlertCircle className="w-3.5 h-3.5 text-amber-500" />
+              <span>Invalid cube configuration</span>
+            </div>
+          ) : (
+            <p className="text-xs text-slate-400 font-medium">
+              Click &quot;Animate Solution&quot; to calculate optimal solution
+            </p>
+          )}
+        </div>
+
+        {/* 3 Stats Metrics Row */}
+        <div className="grid grid-cols-3 gap-1.5 mb-2.5">
+          {/* Card 1: Move Count */}
+          <div className="bg-blue-50/70 border border-blue-100 rounded-xl p-2 flex flex-col items-center justify-center text-center">
+            <span className="text-sm sm:text-base font-extrabold text-blue-700 font-mono">
+              {solutionResult ? moveCount : '—'}
+            </span>
+            <span className="text-[10px] font-semibold text-blue-500">Moves</span>
+          </div>
+
+          {/* Card 2: Estimated Time */}
+          <div className="bg-emerald-50/70 border border-emerald-100 rounded-xl p-2 flex flex-col items-center justify-center text-center">
+            <span className="text-sm sm:text-base font-extrabold text-emerald-700 font-mono">
+              {solutionResult ? estTimeStr : '—'}
+            </span>
+            <span className="text-[10px] font-semibold text-emerald-500">Est. Time</span>
+          </div>
+
+          {/* Card 3: Optimality */}
+          <div className="bg-purple-50/70 border border-purple-100 rounded-xl p-2 flex flex-col items-center justify-center text-center">
+            <span className="text-xs sm:text-sm font-extrabold text-purple-700">
+              Optimal
+            </span>
+            <span className="text-[10px] font-semibold text-purple-500">(Usually)</span>
+          </div>
         </div>
       </div>
 
-      {/* Main Solver Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        {/* Left: 3D Animated Interactive Cube */}
-        <div className="lg:col-span-6 bg-slate-900/80 backdrop-blur-xl border border-slate-700/60 p-4 rounded-3xl shadow-xl flex flex-col gap-3 min-h-[420px]">
-          <div className="flex items-center justify-between px-2">
-            <span className="text-xs sm:text-sm font-semibold text-slate-300 flex items-center gap-1.5">
-              <Eye className="w-4 h-4 text-cyan-400" />
-              <span>3D Cube Simulation</span>
-            </span>
-            <span className="text-[11px] text-slate-400">
-              Updates in real-time with each step
-            </span>
-          </div>
+      {/* Action Buttons */}
+      <div className="space-y-1.5">
+        {/* Large Blue Animate Button */}
+        <button
+          type="button"
+          onClick={handleAnimateClick}
+          disabled={!validation.isValid || isSolving}
+          className="w-full py-2.5 px-4 bg-blue-600 hover:bg-blue-700 active:scale-[0.99] disabled:opacity-50 text-white font-bold text-xs sm:text-sm rounded-xl shadow-sm shadow-blue-500/20 flex items-center justify-center gap-2 transition-all cursor-pointer"
+        >
+          <Play className="w-4 h-4 fill-white" />
+          <span>{isPlaying ? 'Pause Solution' : 'Animate Solution'}</span>
+        </button>
 
-          <div className="flex-1 w-full bg-slate-950/60 rounded-2xl border border-slate-800/80 overflow-hidden relative min-h-[360px]">
-            <Cube3D
-              interactive={true}
-              highlightMove={currentStep ? currentStep.move : null}
-            />
-          </div>
-        </div>
+        {/* Secondary Buttons Row */}
+        <div className="grid grid-cols-2 gap-2">
+          <button
+            type="button"
+            onClick={handleCopy}
+            disabled={!notationString}
+            className="py-1.5 px-3 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 shadow-2xs transition-all disabled:opacity-40 cursor-pointer"
+          >
+            <Copy className="w-3.5 h-3.5 text-slate-500" />
+            <span>Copy Moves</span>
+          </button>
 
-        {/* Right: Current Move Card & Instruction */}
-        <div className="lg:col-span-6 flex flex-col gap-4">
-          {/* Active Step Card */}
-          {isCompleted ? (
-            <div className="bg-gradient-to-br from-emerald-950/50 via-slate-900 to-teal-950/50 border border-emerald-500/40 p-6 sm:p-8 rounded-3xl shadow-2xl flex flex-col items-center text-center gap-4 animate-fade-in">
-              <div className="w-16 h-16 rounded-full bg-emerald-500/20 border border-emerald-400 flex items-center justify-center text-emerald-400 shadow-lg shadow-emerald-500/20">
-                <CheckCircle2 className="w-10 h-10" />
-              </div>
-              <div>
-                <h3 className="text-2xl font-extrabold text-white">Cube Solved!</h3>
-                <p className="text-sm text-emerald-300 mt-1">
-                  Congratulations! All 6 faces have been restored to their solved state in {totalSteps} moves.
-                </p>
-              </div>
-
-              <div className="flex items-center gap-3 mt-2">
-                <button
-                  onClick={() => setCurrentStepIndex(0)}
-                  className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer"
-                >
-                  <RotateCcw className="w-4 h-4" />
-                  <span>Replay Solution</span>
-                </button>
-                <button
-                  onClick={() => {
-                    resetCube();
-                    setInputMode('edit');
-                  }}
-                  className="px-5 py-2 bg-gradient-to-r from-emerald-500 to-teal-400 hover:from-emerald-400 hover:to-teal-300 text-slate-950 font-bold rounded-xl text-xs shadow-lg transition-all cursor-pointer"
-                >
-                  Solve Another Cube
-                </button>
-              </div>
-            </div>
-          ) : currentStep ? (
-            <div className="bg-slate-900/90 backdrop-blur-xl border border-slate-700/60 p-6 rounded-3xl shadow-xl flex flex-col gap-5">
-              {/* Header: Move Notation & Direction Badge */}
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-cyan-500/20 to-teal-500/10 border border-cyan-500/40 flex items-center justify-center text-cyan-300 font-mono text-3xl font-extrabold shadow-inner">
-                    {currentStep.notation}
-                  </div>
-                  <div>
-                    <span className="text-xs font-bold text-cyan-400 uppercase tracking-widest">
-                      Step {currentStepIndex} of {totalSteps}
-                    </span>
-                    <h3 className="text-xl font-bold text-white capitalize">
-                      {currentStep.face} Face {currentStep.direction}
-                    </h3>
-                  </div>
-                </div>
-
-                <div className="px-3 py-1 rounded-full bg-slate-800 border border-slate-700 text-slate-300 text-xs font-semibold capitalize">
-                  {currentStep.direction} ({currentStep.quarterTurns * 90}°)
-                </div>
-              </div>
-
-              {/* Description */}
-              <div className="bg-slate-950/60 border border-slate-800 p-4 rounded-2xl flex flex-col gap-1.5">
-                <span className="text-xs font-semibold text-slate-400 flex items-center gap-1.5">
-                  <HelpCircle className="w-3.5 h-3.5 text-cyan-400" />
-                  <span>What to do:</span>
-                </span>
-                <p className="text-sm sm:text-base text-slate-200 leading-relaxed font-medium">
-                  {currentStep.description}
-                </p>
-              </div>
-
-              {/* Hand/Fingertrick Tip */}
-              <div className="bg-cyan-950/20 border border-cyan-500/20 p-4 rounded-2xl flex items-start gap-3">
-                <Hand className="w-5 h-5 text-cyan-400 shrink-0 mt-0.5" />
-                <div>
-                  <span className="text-xs font-bold text-cyan-300 block mb-0.5">
-                    Pro Fingertrick Tip:
-                  </span>
-                  <p className="text-xs text-slate-300 leading-normal">
-                    {currentStep.handHint}
-                  </p>
-                </div>
-              </div>
-            </div>
-          ) : (
-            <div className="bg-slate-900/90 backdrop-blur-xl border border-slate-700/60 p-6 rounded-3xl shadow-xl flex flex-col gap-4 items-center text-center justify-center min-h-[260px]">
-              <h3 className="text-lg font-bold text-white">Starting Position</h3>
-              <p className="text-xs text-slate-400 max-w-sm">
-                Hold your Rubik&rsquo;s Cube with the <strong className="text-white">Green</strong> face facing you (Front) and the <strong className="text-white">White</strong> face on top (Up). Click Play or Next to start following the moves.
-              </p>
-            </div>
-          )}
-
-          {/* Progress Bar & Pills */}
-          <div className="bg-slate-900/80 backdrop-blur-xl border border-slate-700/60 p-4 rounded-2xl shadow-xl">
-            <ProgressBar
-              currentStep={currentStepIndex}
-              totalSteps={totalSteps}
-              steps={steps}
-              onSelectStep={(idx) => setCurrentStepIndex(idx)}
-            />
-          </div>
-
-          {/* Playback Controls */}
-          <MoveControls
-            currentStep={currentStepIndex}
-            totalSteps={totalSteps}
-            isPlaying={isPlaying}
-            playbackSpeed={playbackSpeed}
-            onPrev={prevStep}
-            onNext={nextStep}
-            onTogglePlay={togglePlay}
-            onReset={() => setCurrentStepIndex(0)}
-            onSpeedChange={setPlaybackSpeed}
-          />
+          <button
+            type="button"
+            onClick={handleExport}
+            disabled={!notationString}
+            className="py-1.5 px-3 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 shadow-2xs transition-all disabled:opacity-40 cursor-pointer"
+          >
+            <Download className="w-3.5 h-3.5 text-slate-500" />
+            <span>Export</span>
+          </button>
         </div>
       </div>
     </div>

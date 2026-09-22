@@ -2,15 +2,8 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useCubeStore } from '@/stores/cube-store';
-import { Cube3D } from '@/components/cube/Cube3D';
 import { StandardMove } from '@/types/cube';
-import { 
-  Shuffle, 
-  RotateCcw, 
-  Trophy, 
-  Flame, 
-  Trash2
-} from 'lucide-react';
+import { Shuffle, Trophy, BarChart2, Flame, Play, Square, RotateCcw } from 'lucide-react';
 
 interface SolveRecord {
   id: string;
@@ -34,7 +27,8 @@ export const CubeTimer: React.FC = () => {
   const applySingleMove = useCubeStore((s) => s.applySingleMove);
   const resetCube = useCubeStore((s) => s.resetCube);
 
-  const [timerState, setTimerState] = useState<'idle' | 'holding' | 'ready' | 'running' | 'inspection'>('idle');
+  const [activeTab, setActiveTab] = useState<'timer' | 'freeplay'>('timer');
+  const [timerState, setTimerState] = useState<'idle' | 'holding' | 'ready' | 'running'>('idle');
   const [timeMs, setTimeMs] = useState(0);
   const [history, setHistory] = useState<SolveRecord[]>([]);
 
@@ -42,285 +36,289 @@ export const CubeTimer: React.FC = () => {
   const animFrameRef = useRef<number | null>(null);
   const holdTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Generate initial scramble if empty
+  // Generate initial scramble if none
   useEffect(() => {
     if (!currentScramble) {
       scrambleCube(20);
     }
   }, [currentScramble, scrambleCube]);
 
-  // Timer loop
-  useEffect(() => {
+  // Stop Timer
+  const stopTimer = useCallback(() => {
     if (timerState === 'running') {
-      const updateTimer = () => {
-        setTimeMs(Date.now() - startTimeRef.current);
-        animFrameRef.current = requestAnimationFrame(updateTimer);
-      };
-      startTimeRef.current = Date.now();
-      animFrameRef.current = requestAnimationFrame(updateTimer);
-    } else {
-      if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
+      const finalTime = performance.now() - startTimeRef.current;
+      setTimeMs(finalTime);
+      setTimerState('idle');
+      if (animFrameRef.current) {
+        cancelAnimationFrame(animFrameRef.current);
+      }
+
+      setHistory((prev) => [
+        {
+          id: Math.random().toString(36).substring(2, 9),
+          timeMs: finalTime,
+          scramble: currentScramble,
+          date: new Date(),
+        },
+        ...prev,
+      ]);
     }
+  }, [timerState, currentScramble]);
 
-    return () => {
-      if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
+  // Start Timer
+  const startTimer = useCallback(() => {
+    setTimerState('running');
+    startTimeRef.current = performance.now();
+
+    const tick = () => {
+      setTimeMs(performance.now() - startTimeRef.current);
+      animFrameRef.current = requestAnimationFrame(tick);
     };
-  }, [timerState]);
+    animFrameRef.current = requestAnimationFrame(tick);
+  }, []);
 
-  // Spacebar controls
-  const handleKeyDown = useCallback(
-    (e: KeyboardEvent) => {
-      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
-
-      if (e.code === 'Space') {
+  // Keyboard Spacebar Listener for WCA-style timer
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (activeTab !== 'timer') return;
+      if (e.code === 'Space' && (e.target as HTMLElement)?.tagName !== 'INPUT') {
         e.preventDefault();
+
         if (timerState === 'running') {
-          // Stop timer
-          const finalTime = Date.now() - startTimeRef.current;
-          setTimeMs(finalTime);
-          setTimerState('idle');
-          setHistory((prev) => [
-            {
-              id: Math.random().toString(),
-              timeMs: finalTime,
-              scramble: currentScramble,
-              date: new Date(),
-            },
-            ...prev,
-          ]);
+          stopTimer();
         } else if (timerState === 'idle') {
           setTimerState('holding');
-          if (!holdTimeoutRef.current) {
-            holdTimeoutRef.current = setTimeout(() => {
-              setTimerState('ready');
-            }, 400);
-          }
+          holdTimeoutRef.current = setTimeout(() => {
+            setTimerState('ready');
+          }, 350);
         }
       }
-    },
-    [timerState, currentScramble]
-  );
+    };
 
-  const handleKeyUp = useCallback(
-    (e: KeyboardEvent) => {
+    const handleKeyUp = (e: KeyboardEvent) => {
+      if (activeTab !== 'timer') return;
       if (e.code === 'Space') {
         e.preventDefault();
+
         if (holdTimeoutRef.current) {
           clearTimeout(holdTimeoutRef.current);
-          holdTimeoutRef.current = null;
         }
 
         if (timerState === 'ready') {
-          setTimeMs(0);
-          setTimerState('running');
+          startTimer();
         } else if (timerState === 'holding') {
           setTimerState('idle');
         }
       }
-    },
-    [timerState]
-  );
+    };
 
-  useEffect(() => {
     window.addEventListener('keydown', handleKeyDown);
     window.addEventListener('keyup', handleKeyUp);
+
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('keyup', handleKeyUp);
+      if (holdTimeoutRef.current) clearTimeout(holdTimeoutRef.current);
+      if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
     };
-  }, [handleKeyDown, handleKeyUp]);
+  }, [timerState, startTimer, stopTimer, activeTab]);
 
+  // Format Millisecond Time (e.g., "12.45")
   const formatTime = (ms: number) => {
-    const totalSeconds = Math.floor(ms / 1000);
-    const minutes = Math.floor(totalSeconds / 60);
-    const seconds = totalSeconds % 60;
-    const milliseconds = Math.floor((ms % 1000) / 10);
-
-    if (minutes > 0) {
-      return `${minutes}:${seconds.toString().padStart(2, '0')}.${milliseconds.toString().padStart(2, '0')}`;
+    const totalSeconds = ms / 1000;
+    const mins = Math.floor(totalSeconds / 60);
+    const secs = (totalSeconds % 60).toFixed(2);
+    if (mins > 0) {
+      return `${mins}:${secs.padStart(5, '0')}`;
     }
-    return `${seconds}.${milliseconds.toString().padStart(2, '0')}`;
+    return secs;
   };
 
-  // Stats calculation
-  const times = history.map((h) => h.timeMs);
-  const bestTime = times.length > 0 ? Math.min(...times) : null;
-  const ao5 =
-    times.length >= 5
-      ? Math.round(times.slice(0, 5).reduce((a, b) => a + b, 0) / 5)
-      : null;
+  // Metrics: Best Time & Ao5
+  const bestTime = history.length > 0 ? Math.min(...history.map((h) => h.timeMs)) : null;
+
+  const calculateAo5 = () => {
+    if (history.length < 5) return null;
+    const last5 = history.slice(0, 5).map((h) => h.timeMs);
+    const sorted = [...last5].sort((a, b) => a - b);
+    const middle3 = sorted.slice(1, 4);
+    return middle3.reduce((a, b) => a + b, 0) / 3;
+  };
+  const ao5 = calculateAo5();
 
   return (
-    <div className="w-full max-w-5xl mx-auto flex flex-col gap-6">
-      {/* Scramble Display Bar */}
-      <div className="bg-slate-900/80 backdrop-blur-xl border border-slate-700/60 p-4 rounded-2xl shadow-xl flex flex-wrap items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <Shuffle className="w-5 h-5 text-purple-400 shrink-0" />
-          <div className="flex flex-col">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-purple-300">
-              WCA Official Scramble
-            </span>
-            <span className="text-sm sm:text-base font-mono font-bold text-slate-100">
-              {currentScramble || 'Generate a scramble to start'}
-            </span>
+    <div className="h-full flex flex-col justify-between p-3.5 bg-white rounded-2xl border border-slate-200/80 shadow-xs select-none">
+      <div>
+        {/* Header */}
+        <div className="flex items-start justify-between mb-2">
+          <div>
+            <h2 className="text-sm font-bold text-slate-900 tracking-tight">
+              4. Timer &amp; Freeplay
+            </h2>
+            <p className="text-[11px] text-slate-400">
+              Practice, scramble and beat your best time
+            </p>
           </div>
         </div>
 
-        <button
-          onClick={() => scrambleCube(20)}
-          className="px-4 py-2 bg-purple-600/30 hover:bg-purple-600/50 border border-purple-500/50 text-purple-200 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer"
-        >
-          <Shuffle className="w-3.5 h-3.5" />
-          <span>New Scramble</span>
-        </button>
-      </div>
+        {/* Segmented Switcher */}
+        <div className="grid grid-cols-2 gap-1 bg-slate-100/90 p-1 rounded-xl border border-slate-200/60 mb-3">
+          <button
+            type="button"
+            onClick={() => setActiveTab('timer')}
+            className={`py-1 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
+              activeTab === 'timer'
+                ? 'bg-white text-slate-900 shadow-xs font-bold'
+                : 'text-slate-500 hover:text-slate-800'
+            }`}
+          >
+            Timer
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab('freeplay')}
+            className={`py-1 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
+              activeTab === 'freeplay'
+                ? 'bg-white text-slate-900 shadow-xs font-bold'
+                : 'text-slate-500 hover:text-slate-800'
+            }`}
+          >
+            Freeplay
+          </button>
+        </div>
 
-      {/* Main Timer Display */}
-      <div
-        className={`
-          w-full bg-slate-900/90 backdrop-blur-xl border rounded-3xl p-8 sm:p-12 shadow-2xl flex flex-col items-center justify-center text-center transition-all duration-200 min-h-[260px] select-none
-          ${
-            timerState === 'ready'
-              ? 'border-emerald-400 bg-emerald-950/30 shadow-emerald-500/20'
-              : timerState === 'holding'
-              ? 'border-rose-400 bg-rose-950/30'
-              : timerState === 'running'
-              ? 'border-cyan-500/50 bg-slate-950/90'
-              : 'border-slate-700/60'
-          }
-        `}
-      >
-        <span
-          className={`
-            font-mono text-5xl sm:text-7xl md:text-8xl font-black tracking-tight transition-colors duration-150
-            ${
-              timerState === 'ready'
-                ? 'text-emerald-400'
-                : timerState === 'holding'
-                ? 'text-rose-400'
-                : timerState === 'running'
-                ? 'text-cyan-400'
-                : 'text-white'
-            }
-          `}
-        >
-          {formatTime(timeMs)}
-        </span>
-
-        <p className="text-xs sm:text-sm text-slate-400 mt-4">
-          {timerState === 'ready'
-            ? 'Release Spacebar to Start!'
-            : timerState === 'holding'
-            ? 'Hold...'
-            : timerState === 'running'
-            ? 'Press Spacebar to Stop'
-            : 'Hold Spacebar to Ready, then Release'}
-        </p>
-      </div>
-
-      {/* 3D Cube & Interactive Move Pad */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        {/* 3D Cube View */}
-        <div className="lg:col-span-7 bg-slate-900/80 backdrop-blur-xl border border-slate-700/60 p-4 rounded-3xl shadow-xl flex flex-col gap-3 min-h-[380px]">
-          <div className="flex items-center justify-between px-2">
-            <span className="text-xs sm:text-sm font-semibold text-slate-300">
-              Interactive 3D Cube (Freeplay)
-            </span>
-            <button
-              onClick={resetCube}
-              className="text-xs text-slate-400 hover:text-white flex items-center gap-1"
-            >
-              <RotateCcw className="w-3.5 h-3.5" />
-              <span>Reset</span>
-            </button>
-          </div>
-
-          <div className="flex-1 w-full bg-slate-950/60 rounded-2xl border border-slate-800/80 overflow-hidden relative min-h-[320px]">
-            <Cube3D interactive={true} />
-          </div>
-
-          {/* Quick Move Buttons */}
-          <div className="grid grid-cols-6 sm:grid-cols-9 gap-1.5 pt-2">
-            {MOVE_BUTTONS.map((move) => (
-              <button
-                key={move}
-                onClick={() => applySingleMove(move)}
-                className="py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700/60 text-slate-200 hover:text-white rounded-lg font-mono text-xs font-bold transition-all active:scale-95 cursor-pointer"
+        {activeTab === 'timer' ? (
+          /* Large Digital Timer View */
+          <div>
+            <div className="py-2.5 flex flex-col items-center justify-center text-center">
+              <span
+                className={`
+                  text-3xl sm:text-4xl font-extrabold font-mono tracking-tight transition-colors duration-150
+                  ${
+                    timerState === 'ready'
+                      ? 'text-emerald-500 scale-105'
+                      : timerState === 'holding'
+                      ? 'text-amber-500'
+                      : timerState === 'running'
+                      ? 'text-blue-600'
+                      : 'text-slate-900'
+                  }
+                `}
               >
-                {move}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Stats & History */}
-        <div className="lg:col-span-5 flex flex-col gap-4">
-          {/* Stats Badges */}
-          <div className="grid grid-cols-2 gap-3">
-            <div className="bg-slate-900/80 border border-slate-700/60 p-4 rounded-2xl flex items-center gap-3">
-              <Trophy className="w-8 h-8 text-amber-400 shrink-0" />
-              <div>
-                <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
-                  Best Time
-                </span>
-                <p className="text-lg font-mono font-bold text-white">
-                  {bestTime ? formatTime(bestTime) : '—'}
-                </p>
-              </div>
-            </div>
-
-            <div className="bg-slate-900/80 border border-slate-700/60 p-4 rounded-2xl flex items-center gap-3">
-              <Flame className="w-8 h-8 text-rose-400 shrink-0" />
-              <div>
-                <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
-                  Ao5
-                </span>
-                <p className="text-lg font-mono font-bold text-white">
-                  {ao5 ? formatTime(ao5) : '—'}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* History List */}
-          <div className="bg-slate-900/80 backdrop-blur-xl border border-slate-700/60 p-4 rounded-2xl shadow-xl flex flex-col gap-3 max-h-[300px] overflow-y-auto">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-slate-300 uppercase tracking-wider">
-                Session History ({history.length})
+                {formatTime(timeMs)}
               </span>
-              {history.length > 0 && (
-                <button
-                  onClick={() => setHistory([])}
-                  className="text-xs text-rose-400 hover:text-rose-300 flex items-center gap-1"
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                  <span>Clear</span>
-                </button>
-              )}
+              <span className="text-[11px] text-slate-400 mt-0.5 font-medium">
+                {timerState === 'running'
+                  ? 'Spacebar or tap Stop to finish'
+                  : timerState === 'ready'
+                  ? 'Release to START!'
+                  : timerState === 'holding'
+                  ? 'Hold ready...'
+                  : 'Press Spacebar to start'}
+              </span>
             </div>
 
-            {history.length > 0 ? (
-              <div className="flex flex-col gap-1.5">
-                {history.map((item, idx) => (
-                  <div
-                    key={item.id}
-                    className="flex items-center justify-between p-2 rounded-xl bg-slate-950/40 border border-slate-800 text-xs font-mono"
-                  >
-                    <span className="text-slate-500">#{history.length - idx}</span>
-                    <span className="font-bold text-emerald-400">{formatTime(item.timeMs)}</span>
-                    <span className="text-slate-400 truncate max-w-[120px] text-[10px]">
-                      {item.scramble}
-                    </span>
-                  </div>
-                ))}
+            {/* 3 Metrics Row */}
+            <div className="grid grid-cols-3 gap-1.5 mt-2">
+              {/* Best Time */}
+              <div className="bg-amber-50/70 border border-amber-100 rounded-xl p-1.5 flex flex-col items-center justify-center text-center">
+                <div className="flex items-center gap-1 text-amber-600 text-[10px] font-bold">
+                  <Trophy className="w-3 h-3" />
+                  <span>Best Time</span>
+                </div>
+                <span className="text-xs font-mono font-extrabold text-amber-800 mt-0.5">
+                  {bestTime ? formatTime(bestTime) : '—'}
+                </span>
               </div>
-            ) : (
-              <p className="text-xs text-slate-500 text-center py-6">
-                No solves yet this session. Time your first solve!
-              </p>
-            )}
+
+              {/* Solves Count */}
+              <div className="bg-emerald-50/70 border border-emerald-100 rounded-xl p-1.5 flex flex-col items-center justify-center text-center">
+                <div className="flex items-center gap-1 text-emerald-600 text-[10px] font-bold">
+                  <BarChart2 className="w-3 h-3" />
+                  <span>Solves</span>
+                </div>
+                <span className="text-xs font-mono font-extrabold text-emerald-800 mt-0.5">
+                  {history.length}
+                </span>
+              </div>
+
+              {/* Ao5 */}
+              <div className="bg-rose-50/70 border border-rose-100 rounded-xl p-1.5 flex flex-col items-center justify-center text-center">
+                <div className="flex items-center gap-1 text-rose-600 text-[10px] font-bold">
+                  <Flame className="w-3 h-3" />
+                  <span>Ao5</span>
+                </div>
+                <span className="text-xs font-mono font-extrabold text-rose-800 mt-0.5">
+                  {ao5 ? formatTime(ao5) : '—'}
+                </span>
+              </div>
+            </div>
           </div>
-        </div>
+        ) : (
+          /* Freeplay Interactive Pad */
+          <div className="py-1">
+            <div className="grid grid-cols-6 gap-1 mb-2">
+              {MOVE_BUTTONS.map((m) => (
+                <button
+                  key={m}
+                  type="button"
+                  onClick={() => applySingleMove(m)}
+                  className="py-1 px-1 rounded-lg bg-slate-100 hover:bg-blue-50 text-slate-800 hover:text-blue-600 font-mono font-bold text-[11px] border border-slate-200 transition-colors cursor-pointer text-center"
+                >
+                  {m}
+                </button>
+              ))}
+            </div>
+            <p className="text-[10px] text-center text-slate-400">
+              Click buttons to rotate layers freely in 3D
+            </p>
+          </div>
+        )}
+      </div>
+
+      {/* Bottom Buttons */}
+      <div className="grid grid-cols-2 gap-2 mt-2 pt-2 border-t border-slate-100">
+        <button
+          type="button"
+          onClick={() => scrambleCube(20)}
+          className="py-1.5 px-3 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 shadow-2xs transition-all cursor-pointer"
+        >
+          <Shuffle className="w-3.5 h-3.5 text-slate-500" />
+          <span>Scramble</span>
+        </button>
+
+        {activeTab === 'timer' ? (
+          <button
+            type="button"
+            onClick={timerState === 'running' ? stopTimer : startTimer}
+            className={`py-1.5 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 shadow-xs transition-all cursor-pointer ${
+              timerState === 'running'
+                ? 'bg-rose-600 hover:bg-rose-700 text-white shadow-rose-500/20'
+                : 'bg-blue-600 hover:bg-blue-700 text-white shadow-blue-500/20'
+            }`}
+          >
+            {timerState === 'running' ? (
+              <>
+                <Square className="w-3.5 h-3.5 fill-white" />
+                <span>Stop</span>
+              </>
+            ) : (
+              <>
+                <Play className="w-3.5 h-3.5 fill-white" />
+                <span>Start Timer</span>
+              </>
+            )}
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={resetCube}
+            className="py-1.5 px-3 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 shadow-2xs transition-all cursor-pointer"
+          >
+            <RotateCcw className="w-3.5 h-3.5 text-slate-500" />
+            <span>Reset Solved</span>
+          </button>
+        )}
       </div>
     </div>
   );

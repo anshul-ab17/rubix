@@ -3,165 +3,191 @@
 import React, { useState } from 'react';
 import { useCubeStore } from '@/stores/cube-store';
 import { CubeEditor } from '@/components/cube/CubeEditor';
-import { FaceScanner } from '@/components/scanner/FaceScanner';
+import { CenterPreview } from '@/components/cube/CenterPreview';
 import { SolutionViewer } from '@/components/solver/SolutionViewer';
 import { CubeTimer } from '@/components/timer/CubeTimer';
+import { FaceScanner } from '@/components/scanner/FaceScanner';
 import { NotationGuide } from '@/components/guide/NotationGuide';
+import { RubixLogo } from '@/components/ui/RubixLogo';
 import { 
   Box, 
   Camera, 
   Sparkles, 
   Timer, 
-  BookOpen
+  BookOpen, 
+  Sun,
+  Settings
 } from 'lucide-react';
 import { InputMode } from '@/types/cube';
 
 export default function Home() {
   const inputMode = useCubeStore((s) => s.inputMode);
   const setInputMode = useCubeStore((s) => s.setInputMode);
-  const solutionResult = useCubeStore((s) => s.solutionResult);
 
   const [isGuideOpen, setIsGuideOpen] = useState(false);
+  const [isScannerOpen, setIsScannerOpen] = useState(false);
 
-  const tabs: { id: InputMode; label: string; icon: React.FC<{ className?: string }>; badge?: string }[] = [
+  const navTabs: { id: InputMode; label: string; icon: React.FC<{ className?: string }> }[] = [
     { id: 'edit', label: 'Build & Edit', icon: Box },
-    { id: 'scan', label: 'Scan Faces', icon: Camera, badge: 'Vision' },
-    { id: 'solve', label: 'Step Solver', icon: Sparkles, badge: solutionResult ? `${solutionResult.moveCount} moves` : undefined },
+    { id: 'scan', label: 'Scan Faces', icon: Camera },
+    { id: 'solve', label: 'Solve', icon: Sparkles },
     { id: 'timer', label: 'Timer & Freeplay', icon: Timer },
   ];
 
+  const handleNavClick = (id: InputMode) => {
+    if (id === 'scan') {
+      setIsScannerOpen(true);
+    } else {
+      setInputMode(id);
+    }
+  };
+
   return (
-    <div className="min-h-screen flex flex-col bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 text-slate-100">
-      {/* Top Header Navbar */}
-      <header className="sticky top-0 z-40 bg-slate-950/80 backdrop-blur-xl border-b border-slate-800/80">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-4">
-          {/* Brand Logo */}
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-cyan-500 via-teal-400 to-emerald-400 flex items-center justify-center p-0.5 shadow-lg shadow-cyan-500/20">
-              <div className="w-full h-full bg-slate-950 rounded-[14px] flex items-center justify-center">
-                <Box className="w-5 h-5 text-cyan-400 animate-pulse" />
-              </div>
+    <div className="h-screen max-h-screen flex flex-col justify-between bg-slate-100/70 text-slate-900 select-none overflow-hidden font-sans">
+      {/* Top Navbar */}
+      <header className="h-14 shrink-0 bg-white/95 border-b border-slate-200/80 px-4 sm:px-6 flex items-center justify-between z-30">
+        {/* Left: Rubix Brand */}
+        <div className="flex items-center gap-2.5">
+          <RubixLogo size={32} />
+          <div>
+            <div className="flex items-center gap-1.5 leading-none">
+              <span className="text-base font-black tracking-tight text-slate-900">
+                Rubix
+              </span>
+              <span className="text-[10px] uppercase font-extrabold px-1.5 py-0.5 rounded-full bg-blue-50 text-blue-600 border border-blue-200/70">
+                3×3 PRO
+              </span>
             </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h1 className="text-base sm:text-lg font-black tracking-tight bg-gradient-to-r from-white via-slate-100 to-slate-300 bg-clip-text text-transparent">
-                  Rubix
-                </h1>
-                <span className="text-[10px] uppercase font-bold tracking-widest px-1.5 py-0.5 rounded bg-cyan-500/10 border border-cyan-500/30 text-cyan-400">
-                  3×3 Pro
-                </span>
-              </div>
-              <p className="text-[11px] text-slate-400 hidden sm:block">
-                Scan &bull; Build &bull; Solve Step by Step
-              </p>
-            </div>
-          </div>
-
-          {/* Center Navigation Tabs (Desktop) */}
-          <nav className="hidden md:flex items-center gap-1.5 bg-slate-900/90 border border-slate-800 p-1.5 rounded-2xl">
-            {tabs.map((tab) => {
-              const Icon = tab.icon;
-              const isActive = inputMode === tab.id;
-
-              return (
-                <button
-                  key={tab.id}
-                  onClick={() => setInputMode(tab.id)}
-                  className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-2 transition-all cursor-pointer ${
-                    isActive
-                      ? 'bg-cyan-500 text-slate-950 shadow-md shadow-cyan-500/20 font-bold'
-                      : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
-                  }`}
-                >
-                  <Icon className="w-4 h-4" />
-                  <span>{tab.label}</span>
-                  {tab.badge && (
-                    <span
-                      className={`text-[9px] px-1.5 py-0.2 rounded-full font-bold ${
-                        isActive
-                          ? 'bg-slate-950 text-cyan-300'
-                          : 'bg-slate-800 text-cyan-400'
-                      }`}
-                    >
-                      {tab.badge}
-                    </span>
-                  )}
-                </button>
-              );
-            })}
-          </nav>
-
-          {/* Right Header Actions */}
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setIsGuideOpen(true)}
-              className="p-2 sm:px-3 sm:py-1.5 bg-slate-900 hover:bg-slate-800 border border-slate-700/80 rounded-xl text-xs font-medium text-slate-300 hover:text-white flex items-center gap-1.5 transition-all cursor-pointer"
-              title="Notation and fingertrick guide"
-            >
-              <BookOpen className="w-4 h-4 text-cyan-400" />
-              <span className="hidden sm:inline">Notation Guide</span>
-            </button>
+            <p className="text-[10px] text-slate-400 font-medium leading-none mt-0.5">
+              Scan &bull; Build &bull; Solve Step by Step
+            </p>
           </div>
         </div>
 
-        {/* Mobile Navigation Tabs */}
-        <div className="md:hidden flex items-center justify-around border-t border-slate-800/80 px-2 py-1.5 bg-slate-950">
-          {tabs.map((tab) => {
+        {/* Center: Pill Segmented Navigation */}
+        <nav className="flex items-center gap-1 bg-slate-100/90 p-1 rounded-2xl border border-slate-200/70">
+          {navTabs.map((tab) => {
             const Icon = tab.icon;
             const isActive = inputMode === tab.id;
 
             return (
               <button
                 key={tab.id}
-                onClick={() => setInputMode(tab.id)}
-                className={`flex flex-col items-center gap-1 p-2 rounded-xl text-[10px] font-semibold transition-all cursor-pointer ${
+                type="button"
+                onClick={() => handleNavClick(tab.id)}
+                className={`px-3 py-1 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer ${
                   isActive
-                    ? 'text-cyan-400 bg-cyan-500/10'
-                    : 'text-slate-400 hover:text-white'
+                    ? 'bg-white text-blue-600 shadow-xs font-bold'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
                 }`}
               >
-                <Icon className="w-4 h-4" />
+                <Icon className="w-3.5 h-3.5" />
                 <span>{tab.label}</span>
               </button>
             );
           })}
+        </nav>
+
+        {/* Right Header Actions */}
+        <div className="flex items-center gap-2">
+          {/* Light theme toggle */}
+          <button
+            type="button"
+            className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-xl transition-colors cursor-pointer"
+            title="Theme"
+          >
+            <Sun className="w-4 h-4" />
+          </button>
+
+          {/* Notation Guide button */}
+          <button
+            type="button"
+            onClick={() => setIsGuideOpen(true)}
+            className="px-3 py-1.5 bg-white hover:bg-slate-50 border border-slate-200/80 rounded-xl text-xs font-semibold text-slate-700 flex items-center gap-1.5 shadow-2xs transition-all cursor-pointer"
+          >
+            <BookOpen className="w-3.5 h-3.5 text-slate-500" />
+            <span className="hidden md:inline">Notation Guide</span>
+          </button>
+
+          {/* Settings button */}
+          <button
+            type="button"
+            className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-xl transition-colors cursor-pointer"
+            title="Settings"
+          >
+            <Settings className="w-4 h-4" />
+          </button>
+
+          {/* Handwritten Quote */}
+          <span className="hidden xl:inline text-xs font-serif italic text-blue-600 font-semibold pl-2">
+            Turn Ideas Into Solved
+          </span>
         </div>
       </header>
 
-      {/* Main Content Area */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-6 sm:py-8 flex flex-col items-center">
-        {inputMode === 'edit' && <CubeEditor />}
-        {inputMode === 'scan' && <FaceScanner />}
-        {inputMode === 'solve' && <SolutionViewer />}
-        {inputMode === 'timer' && <CubeTimer />}
+      {/* Main 4-Section Dashboard Grid */}
+      <main className="flex-1 min-h-0 p-3 sm:p-4 grid grid-cols-12 gap-3 sm:gap-4 overflow-hidden">
+        {/* Left Column (Section 1: 1. Set Cube State) */}
+        <div className="col-span-12 lg:col-span-3 h-full min-h-0">
+          <CubeEditor onOpenScanner={() => setIsScannerOpen(true)} />
+        </div>
+
+        {/* Center Column (Section 2: 2. 3D Cube Preview + Live Solving Animation) */}
+        <div className="col-span-12 lg:col-span-6 h-full min-h-0">
+          <CenterPreview />
+        </div>
+
+        {/* Right Column (Split into Section 3 & Section 4) */}
+        <div className="col-span-12 lg:col-span-3 h-full min-h-0 flex flex-col gap-3 sm:gap-4 justify-between">
+          {/* Section 3: 3. Solution & Steps (Top Half) */}
+          <div className="flex-1 min-h-0">
+            <SolutionViewer onOpenGuide={() => setIsGuideOpen(true)} />
+          </div>
+
+          {/* Section 4: 4. Timer & Freeplay (Bottom Half) */}
+          <div className="flex-1 min-h-0">
+            <CubeTimer />
+          </div>
+        </div>
       </main>
 
-      {/* Notation Reference Modal */}
+      {/* Compact Clean Footer */}
+      <footer className="h-7 shrink-0 bg-white/80 border-t border-slate-200/80 px-4 sm:px-6 flex items-center justify-between text-[11px] text-slate-400 z-20">
+        <div className="flex items-center gap-2">
+          <span className="font-bold text-slate-700">Rubix</span>
+          <span>&bull;</span>
+          <span>Kociemba Two-Phase 3&times;3 Algorithm</span>
+        </div>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => setIsGuideOpen(true)}
+            className="hover:text-blue-600 transition-colors cursor-pointer"
+          >
+            How to solve
+          </button>
+          <span>&bull;</span>
+          <button
+            onClick={() => setIsGuideOpen(true)}
+            className="hover:text-blue-600 transition-colors cursor-pointer"
+          >
+            Notation Guide
+          </button>
+          <span>&bull;</span>
+          <span>100% Client-Side</span>
+          <span>&bull;</span>
+          <span>Built with &#9825; for cubers</span>
+        </div>
+      </footer>
+
+      {/* Overlays / Modals */}
+      <FaceScanner
+        isOpen={isScannerOpen}
+        onClose={() => setIsScannerOpen(false)}
+      />
       <NotationGuide
         isOpen={isGuideOpen}
         onClose={() => setIsGuideOpen(false)}
       />
-
-      {/* Footer */}
-      <footer className="border-t border-slate-800/80 py-6 px-4 bg-slate-950/60 mt-auto">
-        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-400">
-          <div className="flex items-center gap-2">
-            <span className="font-bold text-slate-200">Rubix</span>
-            <span>&bull;</span>
-            <span>Kociemba Two-Phase 3×3 Algorithm</span>
-          </div>
-          <div className="flex items-center gap-4">
-            <button
-              onClick={() => setIsGuideOpen(true)}
-              className="hover:text-cyan-400 transition-colors"
-            >
-              How to hold & solve
-            </button>
-            <span>&bull;</span>
-            <span>100% Client-Side &amp; Offline Ready</span>
-          </div>
-        </div>
-      </footer>
     </div>
   );
 }

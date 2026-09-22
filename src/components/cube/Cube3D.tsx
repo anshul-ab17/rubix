@@ -4,7 +4,7 @@ import React, { useEffect, useRef, useCallback } from 'react';
 import * as THREE from 'three';
 import { FaceName, StandardMove, COLOR_HEX_MAP, FACE_NAMES } from '@/types/cube';
 import { useCubeStore } from '@/stores/cube-store';
-import { RotateCcw, Compass } from 'lucide-react';
+import { RotateCcw } from 'lucide-react';
 
 interface Cube3DProps {
   interactive?: boolean;
@@ -12,6 +12,7 @@ interface Cube3DProps {
   className?: string;
   autoRotate?: boolean;
   highlightMove?: StandardMove | null;
+  cameraPreset?: 'iso' | 'front' | 'top' | 'right';
 }
 
 // 6 material indices in Three.js BoxGeometry:
@@ -34,13 +35,13 @@ const FACELET_POSITIONS: Record<FaceName, { x: number; y: number; z: number }[]>
     { x: -1, y: -1, z: -1 }, { x: 0, y: -1, z: -1 }, { x: 1, y: -1, z: -1 },
   ],
   F: [
-    { x: -1, y: 1, z: 1 }, { x: 0, y: 1, z: 1 }, { x: 1, y: 1, z: 1 },
-    { x: -1, y: 0, z: 1 }, { x: 0, y: 0, z: 1 }, { x: 1, y: 0, z: 1 },
+    { x: -1, y: 1, z: 1 },  { x: 0, y: 1, z: 1 },  { x: 1, y: 1, z: 1 },
+    { x: -1, y: 0, z: 1 },  { x: 0, y: 0, z: 1 },  { x: 1, y: 0, z: 1 },
     { x: -1, y: -1, z: 1 }, { x: 0, y: -1, z: 1 }, { x: 1, y: -1, z: 1 },
   ],
   B: [
-    { x: 1, y: 1, z: -1 }, { x: 0, y: 1, z: -1 }, { x: -1, y: 1, z: -1 },
-    { x: 1, y: 0, z: -1 }, { x: 0, y: 0, z: -1 }, { x: -1, y: 0, z: -1 },
+    { x: 1, y: 1, z: -1 },  { x: 0, y: 1, z: -1 },  { x: -1, y: 1, z: -1 },
+    { x: 1, y: 0, z: -1 },  { x: 0, y: 0, z: -1 },  { x: -1, y: 0, z: -1 },
     { x: 1, y: -1, z: -1 }, { x: 0, y: -1, z: -1 }, { x: -1, y: -1, z: -1 },
   ],
   L: [
@@ -56,27 +57,28 @@ const FACELET_POSITIONS: Record<FaceName, { x: number; y: number; z: number }[]>
 };
 
 const FACE_NORMAL_INDEX: Record<FaceName, number> = {
-  R: 0,
-  L: 1,
-  U: 2,
-  D: 3,
-  F: 4,
-  B: 5,
+  R: 0, // +X
+  L: 1, // -X
+  U: 2, // +Y
+  D: 3, // -Y
+  F: 4, // +Z
+  B: 5, // -Z
 };
 
-const BLACK_COLOR = 0x18181b;
+const INTERNAL_BLACK = '#0f172a';
+const CUBIE_SIZE = 0.96;
+const CUBIE_SPACING = 1.0;
 
 export const Cube3D: React.FC<Cube3DProps> = ({
   interactive = true,
   onStickerClick,
   className = '',
   autoRotate = false,
-  highlightMove = null,
+  cameraPreset = 'iso',
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const cubeState = useCubeStore((s) => s.cubeState);
   const activeColor = useCubeStore((s) => s.activeColor);
-  const inputMode = useCubeStore((s) => s.inputMode);
   const setStickerColor = useCubeStore((s) => s.setStickerColor);
 
   const sceneRef = useRef<THREE.Scene | null>(null);
@@ -87,21 +89,179 @@ export const Cube3D: React.FC<Cube3DProps> = ({
   const isDraggingRef = useRef(false);
   const previousMousePositionRef = useRef({ x: 0, y: 0 });
   const touchStartRef = useRef({ x: 0, y: 0 });
+  const animatingMoveRef = useRef(false);
+
+  // Helper to get sticker material
+  const createStickerMaterial = (hex: string) => {
+    return new THREE.MeshStandardMaterial({
+      color: new THREE.Color(hex),
+      roughness: 0.15,
+      metalness: 0.05,
+    });
+  };
+
+  // Update cubie face materials based on current CubeState
+  const updateMaterials = useCallback(() => {
+    if (!cubeGroupRef.current) return;
+
+    // Reset default materials to black internal
+    cubiesRef.current.forEach((cubie) => {
+      const materials = cubie.material as THREE.MeshStandardMaterial[];
+      for (let i = 0; i < 6; i++) {
+        materials[i].color.set(INTERNAL_BLACK);
+      }
+    });
+
+    // Map facelets to cubie materials
+    for (const face of FACE_NAMES) {
+      const positions = FACELET_POSITIONS[face];
+      const matIndex = FACE_NORMAL_INDEX[face];
+
+      for (let i = 0; i < 9; i++) {
+        const pos = positions[i];
+        const color = cubeState[face][i];
+        const hex = COLOR_HEX_MAP[color] || '#334155';
+
+        // Find matching cubie
+        const cubie = cubiesRef.current.find((c) => {
+          return (
+            Math.round(c.position.x) === pos.x &&
+            Math.round(c.position.y) === pos.y &&
+            Math.round(c.position.z) === pos.z
+          );
+        });
+
+        if (cubie) {
+          const materials = cubie.material as THREE.MeshStandardMaterial[];
+          materials[matIndex].color.set(hex);
+          // Store face metadata on mesh for raycasting
+          cubie.userData[`face_${matIndex}`] = { face, index: i };
+        }
+      }
+    }
+  }, [cubeState]);
+
+  // Execute smooth animated layer rotation for any standard move
+  const animateLayerRotation = useCallback((move: StandardMove, onComplete?: () => void) => {
+    if (!cubeGroupRef.current || !sceneRef.current || animatingMoveRef.current) {
+      if (onComplete) onComplete();
+      return;
+    }
+
+    animatingMoveRef.current = true;
+    const face = move[0] as FaceName;
+    const isPrime = move.includes("'");
+    const isDouble = move.includes('2');
+
+    // Axis and target angle
+    let axis = new THREE.Vector3(0, 1, 0);
+    let targetAngle = -Math.PI / 2;
+    let filterFn = (_pos: THREE.Vector3) => false;
+
+    if (face === 'U') {
+      axis = new THREE.Vector3(0, 1, 0);
+      targetAngle = -Math.PI / 2;
+      filterFn = (pos) => pos.y > 0.5;
+    } else if (face === 'D') {
+      axis = new THREE.Vector3(0, 1, 0);
+      targetAngle = Math.PI / 2;
+      filterFn = (pos) => pos.y < -0.5;
+    } else if (face === 'R') {
+      axis = new THREE.Vector3(1, 0, 0);
+      targetAngle = -Math.PI / 2;
+      filterFn = (pos) => pos.x > 0.5;
+    } else if (face === 'L') {
+      axis = new THREE.Vector3(1, 0, 0);
+      targetAngle = Math.PI / 2;
+      filterFn = (pos) => pos.x < -0.5;
+    } else if (face === 'F') {
+      axis = new THREE.Vector3(0, 0, 1);
+      targetAngle = -Math.PI / 2;
+      filterFn = (pos) => pos.z > 0.5;
+    } else if (face === 'B') {
+      axis = new THREE.Vector3(0, 0, 1);
+      targetAngle = Math.PI / 2;
+      filterFn = (pos) => pos.z < -0.5;
+    }
+
+    if (isPrime) targetAngle = -targetAngle;
+    if (isDouble) targetAngle = targetAngle * 2;
+
+    const layerCubies = cubiesRef.current.filter((c) => filterFn(c.position));
+    const pivot = new THREE.Group();
+    cubeGroupRef.current.add(pivot);
+
+    layerCubies.forEach((c) => {
+      pivot.attach(c);
+    });
+
+    const duration = 220; // ms
+    const startTime = performance.now();
+
+    const animate = (time: number) => {
+      const elapsed = time - startTime;
+      const progress = Math.min(1, elapsed / duration);
+      // Smooth cubic ease out
+      const ease = 1 - Math.pow(1 - progress, 3);
+      
+      pivot.setRotationFromAxisAngle(axis, targetAngle * ease);
+
+      if (progress < 1) {
+        requestAnimationFrame(animate);
+      } else {
+        pivot.setRotationFromAxisAngle(axis, targetAngle);
+        pivot.updateMatrixWorld();
+
+        // Re-attach cubies back to root cube group with updated positions
+        layerCubies.forEach((c) => {
+          cubeGroupRef.current?.attach(c);
+          c.position.x = Math.round(c.position.x);
+          c.position.y = Math.round(c.position.y);
+          c.position.z = Math.round(c.position.z);
+          c.rotation.set(0, 0, 0);
+        });
+
+        cubeGroupRef.current?.remove(pivot);
+        animatingMoveRef.current = false;
+        updateMaterials();
+        if (onComplete) onComplete();
+      }
+    };
+
+    requestAnimationFrame(animate);
+  }, [updateMaterials]);
+
+  // Set Camera Preset
+  const setCameraView = useCallback((preset: 'iso' | 'front' | 'top' | 'right') => {
+    if (!cameraRef.current) return;
+    const camera = cameraRef.current;
+    
+    if (preset === 'iso') {
+      camera.position.set(4.5, 3.8, 5.5);
+    } else if (preset === 'front') {
+      camera.position.set(0, 0, 7.5);
+    } else if (preset === 'top') {
+      camera.position.set(0, 7.5, 0.01);
+    } else if (preset === 'right') {
+      camera.position.set(7.5, 0, 0);
+    }
+    camera.lookAt(0, 0, 0);
+  }, []);
 
   // Initialize Three.js scene
   useEffect(() => {
     if (!containerRef.current) return;
     const container = containerRef.current;
 
-    const width = container.clientWidth || 300;
-    const height = container.clientHeight || 300;
+    const width = container.clientWidth || 360;
+    const height = container.clientHeight || 360;
 
     const scene = new THREE.Scene();
     sceneRef.current = scene;
 
-    const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 100);
-    camera.position.set(4.5, 3.8, 5.5);
-    camera.lookAt(0, 0, 0);
+    const camera = new THREE.PerspectiveCamera(40, width / height, 0.1, 100);
+    camera.position.set(4.5, 3.6, 5.4);
+    camera.lookAt(0, -0.1, 0);
     cameraRef.current = camera;
 
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
@@ -111,260 +271,202 @@ export const Cube3D: React.FC<Cube3DProps> = ({
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     rendererRef.current = renderer;
 
-    container.innerHTML = '';
-    container.appendChild(renderer.domElement);
+    container.replaceChildren(renderer.domElement);
 
-    // Lights
+    // Studio Lighting
     const ambientLight = new THREE.AmbientLight(0xffffff, 1.4);
     scene.add(ambientLight);
 
-    const dirLight1 = new THREE.DirectionalLight(0xffffff, 1.8);
-    dirLight1.position.set(8, 12, 10);
-    dirLight1.castShadow = true;
-    scene.add(dirLight1);
+    const mainLight = new THREE.DirectionalLight(0xffffff, 2.2);
+    mainLight.position.set(6, 10, 8);
+    mainLight.castShadow = true;
+    mainLight.shadow.mapSize.width = 1024;
+    mainLight.shadow.mapSize.height = 1024;
+    scene.add(mainLight);
 
-    const dirLight2 = new THREE.DirectionalLight(0xffffff, 0.8);
-    dirLight2.position.set(-8, -10, -8);
-    scene.add(dirLight2);
+    const fillLight = new THREE.DirectionalLight(0xe0f2fe, 1.2);
+    fillLight.position.set(-6, 6, -6);
+    scene.add(fillLight);
 
-    // Create Cube Group & 27 Cubies
+    const bottomLight = new THREE.DirectionalLight(0xffffff, 0.5);
+    bottomLight.position.set(0, -8, 0);
+    scene.add(bottomLight);
+
+    // Soft Studio Ground Shadow Plane
+    const shadowGeo = new THREE.PlaneGeometry(10, 10);
+    const shadowMat = new THREE.ShadowMaterial({ opacity: 0.15 });
+    const shadowPlane = new THREE.Mesh(shadowGeo, shadowMat);
+    shadowPlane.rotation.x = -Math.PI / 2;
+    shadowPlane.position.y = -2.2;
+    shadowPlane.receiveShadow = true;
+    scene.add(shadowPlane);
+
+    // Cube Group
     const cubeGroup = new THREE.Group();
-    scene.add(cubeGroup);
+    cubeGroup.position.set(0, 0, 0);
     cubeGroupRef.current = cubeGroup;
+    scene.add(cubeGroup);
 
+    // Create 27 cubies
+    const geometry = new THREE.BoxGeometry(CUBIE_SIZE, CUBIE_SIZE, CUBIE_SIZE);
     const cubies: THREE.Mesh[] = [];
-    const geometry = new THREE.BoxGeometry(0.95, 0.95, 0.95);
 
     for (let x = -1; x <= 1; x++) {
       for (let y = -1; y <= 1; y++) {
         for (let z = -1; z <= 1; z++) {
-          // 6 materials per cubie
-          const materials: THREE.MeshStandardMaterial[] = [];
-          for (let i = 0; i < 6; i++) {
-            materials.push(
-              new THREE.MeshStandardMaterial({
-                color: BLACK_COLOR,
-                roughness: 0.35,
-                metalness: 0.1,
-              })
-            );
-          }
+          const materials: THREE.MeshStandardMaterial[] = [
+            createStickerMaterial(INTERNAL_BLACK),
+            createStickerMaterial(INTERNAL_BLACK),
+            createStickerMaterial(INTERNAL_BLACK),
+            createStickerMaterial(INTERNAL_BLACK),
+            createStickerMaterial(INTERNAL_BLACK),
+            createStickerMaterial(INTERNAL_BLACK),
+          ];
 
-          const mesh = new THREE.Mesh(geometry, materials);
-          mesh.position.set(x, y, z);
-          mesh.userData = { initialX: x, initialY: y, initialZ: z, currentX: x, currentY: y, currentZ: z };
-          cubeGroup.add(mesh);
-          cubies.push(mesh);
+          const cubie = new THREE.Mesh(geometry, materials);
+          cubie.position.set(x * CUBIE_SPACING, y * CUBIE_SPACING, z * CUBIE_SPACING);
+          cubie.castShadow = true;
+          cubie.receiveShadow = true;
+          cubeGroup.add(cubie);
+          cubies.push(cubie);
         }
       }
     }
+
     cubiesRef.current = cubies;
+    updateMaterials();
 
-    // Animation Loop
-    let animationFrameId: number;
-    const animate = () => {
-      animationFrameId = requestAnimationFrame(animate);
-      if (autoRotate && cubeGroupRef.current && !isDraggingRef.current) {
-        cubeGroupRef.current.rotation.y += 0.005;
-      }
-      renderer.render(scene, camera);
-    };
-    animate();
-
-    // Resize Handler
-    const handleResize = () => {
+    // Resize Observer
+    const resizeObserver = new ResizeObserver(() => {
       if (!container || !renderer || !camera) return;
       const w = container.clientWidth;
       const h = container.clientHeight;
+      if (w === 0 || h === 0) return;
       camera.aspect = w / h;
       camera.updateProjectionMatrix();
       renderer.setSize(w, h);
-    };
+    });
+    resizeObserver.observe(container);
 
-    window.addEventListener('resize', handleResize);
+    // Animation Render Loop
+    let animationFrameId: number;
+    const render = () => {
+      if (autoRotate && cubeGroupRef.current && !isDraggingRef.current && !animatingMoveRef.current) {
+        cubeGroupRef.current.rotation.y += 0.005;
+      }
+      renderer.render(scene, camera);
+      animationFrameId = requestAnimationFrame(render);
+    };
+    render();
 
     return () => {
-      window.removeEventListener('resize', handleResize);
       cancelAnimationFrame(animationFrameId);
+      resizeObserver.disconnect();
       renderer.dispose();
     };
-  }, [autoRotate]);
+  }, [autoRotate, updateMaterials]);
 
-  // Update sticker materials when cubeState changes
-  const updateMaterials = useCallback(() => {
-    if (!cubiesRef.current.length) return;
-
-    // First reset all outer faces to dark
-    for (const cubie of cubiesRef.current) {
-      const mats = cubie.material as THREE.MeshStandardMaterial[];
-      for (let i = 0; i < 6; i++) {
-        mats[i].color.setHex(BLACK_COLOR);
-      }
-    }
-
-    // Map each facelet in state to its respective cubie and material face
-    for (const face of FACE_NAMES) {
-      const positions = FACELET_POSITIONS[face];
-      const matIndex = FACE_NORMAL_INDEX[face];
-
-      positions.forEach((pos, index) => {
-        const colorName = cubeState[face][index];
-        const hex = COLOR_HEX_MAP[colorName] || '#ffffff';
-
-        // Find cubie at position pos
-        const cubie = cubiesRef.current.find((m) => {
-          return (
-            Math.round(m.position.x) === pos.x &&
-            Math.round(m.position.y) === pos.y &&
-            Math.round(m.position.z) === pos.z
-          );
-        });
-
-        if (cubie) {
-          const mats = cubie.material as THREE.MeshStandardMaterial[];
-          mats[matIndex].color.set(hex);
-          mats[matIndex].roughness = 0.2;
-          mats[matIndex].metalness = 0.15;
-          cubie.userData[`face_${matIndex}`] = { face, index };
-        }
-      });
-    }
-  }, [cubeState]);
-
+  // Update materials when cubeState changes
   useEffect(() => {
-    updateMaterials();
+    if (!animatingMoveRef.current) {
+      updateMaterials();
+    }
   }, [cubeState, updateMaterials]);
 
-  // Handle Raycasting / Sticker Clicking
-  const handleClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!interactive || !containerRef.current || !cameraRef.current || !sceneRef.current) return;
+  // Update Camera Preset when prop changes
+  useEffect(() => {
+    setCameraView(cameraPreset);
+  }, [cameraPreset, setCameraView]);
 
-    const rect = containerRef.current.getBoundingClientRect();
-    const x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
-    const y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+  // Raycaster click handler for painting stickers in 3D
+  const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!interactive) return;
+    isDraggingRef.current = true;
+    previousMousePositionRef.current = { x: e.clientX, y: e.clientY };
+    touchStartRef.current = { x: e.clientX, y: e.clientY };
+  };
 
-    const raycaster = new THREE.Raycaster();
-    raycaster.setFromCamera(new THREE.Vector2(x, y), cameraRef.current);
+  const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!isDraggingRef.current || !cubeGroupRef.current || animatingMoveRef.current) return;
 
-    const intersects = raycaster.intersectObjects(cubiesRef.current);
-    if (intersects.length > 0) {
-      const hit = intersects[0];
-      const mesh = hit.object as THREE.Mesh;
-      const faceIndex = hit.face?.materialIndex;
+    const deltaX = e.clientX - previousMousePositionRef.current.x;
+    const deltaY = e.clientY - previousMousePositionRef.current.y;
 
-      if (faceIndex !== undefined) {
-        const faceData = mesh.userData[`face_${faceIndex}`];
-        if (faceData) {
-          if (onStickerClick) {
-            onStickerClick(faceData.face, faceData.index);
-          } else if (inputMode === 'edit') {
-            setStickerColor(faceData.face, faceData.index, activeColor);
+    cubeGroupRef.current.rotation.y += deltaX * 0.009;
+    cubeGroupRef.current.rotation.x += deltaY * 0.009;
+
+    previousMousePositionRef.current = { x: e.clientX, y: e.clientY };
+  };
+
+  const handlePointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!isDraggingRef.current) return;
+    isDraggingRef.current = false;
+
+    const dragDistance = Math.hypot(
+      e.clientX - touchStartRef.current.x,
+      e.clientY - touchStartRef.current.y
+    );
+
+    // If click (not drag), perform raycast sticker detection
+    if (dragDistance < 5 && interactive && containerRef.current && cameraRef.current && sceneRef.current) {
+      const rect = containerRef.current.getBoundingClientRect();
+      const mouse = new THREE.Vector2(
+        ((e.clientX - rect.left) / rect.width) * 2 - 1,
+        -((e.clientY - rect.top) / rect.height) * 2 + 1
+      );
+
+      const raycaster = new THREE.Raycaster();
+      raycaster.setFromCamera(mouse, cameraRef.current);
+
+      const intersects = raycaster.intersectObjects(cubiesRef.current);
+      if (intersects.length > 0) {
+        const hit = intersects[0];
+        const materialIndex = hit.face?.materialIndex;
+        if (materialIndex !== undefined && materialIndex >= 0) {
+          const faceData = hit.object.userData[`face_${materialIndex}`];
+          if (faceData) {
+            const { face, index } = faceData as { face: FaceName; index: number };
+            if (onStickerClick) {
+              onStickerClick(face, index);
+            } else {
+              setStickerColor(face, index, activeColor);
+            }
           }
         }
       }
     }
   };
 
-  // Mouse & Touch Drag Rotation Handling
-  const handleMouseDown = (e: React.MouseEvent) => {
-    isDraggingRef.current = true;
-    previousMousePositionRef.current = { x: e.clientX, y: e.clientY };
-  };
-
-  const handleMouseMove = (e: React.MouseEvent) => {
-    if (!isDraggingRef.current || !cubeGroupRef.current) return;
-    const deltaX = e.clientX - previousMousePositionRef.current.x;
-    const deltaY = e.clientY - previousMousePositionRef.current.y;
-
-    cubeGroupRef.current.rotation.y += deltaX * 0.008;
-    cubeGroupRef.current.rotation.x += deltaY * 0.008;
-
-    previousMousePositionRef.current = { x: e.clientX, y: e.clientY };
-  };
-
-  const handleMouseUp = () => {
-    isDraggingRef.current = false;
-  };
-
-  const handleTouchStart = (e: React.TouchEvent) => {
-    if (e.touches.length === 1) {
-      isDraggingRef.current = true;
-      touchStartRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
-    }
-  };
-
-  const handleTouchMove = (e: React.TouchEvent) => {
-    if (!isDraggingRef.current || !cubeGroupRef.current || e.touches.length !== 1) return;
-    const deltaX = e.touches[0].clientX - touchStartRef.current.x;
-    const deltaY = e.touches[0].clientY - touchStartRef.current.y;
-
-    cubeGroupRef.current.rotation.y += deltaX * 0.01;
-    cubeGroupRef.current.rotation.x += deltaY * 0.01;
-
-    touchStartRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
-  };
-
-  const handleTouchEnd = () => {
-    isDraggingRef.current = false;
-  };
-
-  const resetCameraView = (view: 'front' | 'top' | 'isometric' = 'isometric') => {
-    if (!cubeGroupRef.current) return;
-    if (view === 'isometric') {
-      cubeGroupRef.current.rotation.set(0.4, 0.6, 0);
-    } else if (view === 'front') {
+  const handleResetOrientation = () => {
+    if (cubeGroupRef.current) {
       cubeGroupRef.current.rotation.set(0, 0, 0);
-    } else if (view === 'top') {
-      cubeGroupRef.current.rotation.set(Math.PI / 2, 0, 0);
     }
+    setCameraView('iso');
   };
 
   return (
-    <div className={`relative flex flex-col items-center justify-center select-none ${className}`}>
-      {/* 3D WebGL Canvas */}
+    <div className={`relative w-full h-full flex items-center justify-center select-none ${className}`}>
+      {/* 3D Canvas Mount Point */}
       <div
         ref={containerRef}
-        onClick={handleClick}
-        onMouseDown={handleMouseDown}
-        onMouseMove={handleMouseMove}
-        onMouseUp={handleMouseUp}
-        onTouchStart={handleTouchStart}
-        onTouchMove={handleTouchMove}
-        onTouchEnd={handleTouchEnd}
-        className="w-full h-full min-h-[320px] cursor-grab active:cursor-grabbing rounded-2xl overflow-hidden touch-none"
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
+        className="w-full h-full cursor-grab active:cursor-grabbing touch-none flex items-center justify-center"
       />
 
-      {/* Floating 3D Control Overlay */}
-      <div className="absolute bottom-3 right-3 flex items-center gap-1.5 bg-slate-900/80 backdrop-blur-md border border-slate-700/60 p-1.5 rounded-xl shadow-lg z-10">
-        <button
-          onClick={() => resetCameraView('isometric')}
-          title="Reset Isometric Angle"
-          className="p-1.5 text-slate-300 hover:text-white hover:bg-slate-700/60 rounded-lg transition-colors text-xs flex items-center gap-1"
-        >
-          <RotateCcw className="w-3.5 h-3.5" />
-          <span>Reset View</span>
-        </button>
-        <button
-          onClick={() => resetCameraView('front')}
-          title="Front Face Focus"
-          className="p-1.5 text-slate-300 hover:text-white hover:bg-slate-700/60 rounded-lg transition-colors text-xs"
-        >
-          Front (F)
-        </button>
-        <button
-          onClick={() => resetCameraView('top')}
-          title="Top Face Focus"
-          className="p-1.5 text-slate-300 hover:text-white hover:bg-slate-700/60 rounded-lg transition-colors text-xs"
-        >
-          Top (U)
-        </button>
-      </div>
-
-      {/* Highlight Move Pill if any */}
-      {highlightMove && (
-        <div className="absolute top-3 left-3 bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 backdrop-blur-md px-3 py-1.5 rounded-xl text-sm font-semibold flex items-center gap-2 shadow-lg animate-pulse">
-          <Compass className="w-4 h-4 text-emerald-400" />
-          <span>Move: {highlightMove}</span>
+      {/* Interactive Controls Overlay */}
+      {interactive && (
+        <div className="absolute top-2 left-2 flex items-center gap-1.5 z-10 pointer-events-auto">
+          <button
+            type="button"
+            onClick={handleResetOrientation}
+            className="p-1.5 bg-white/90 hover:bg-white text-slate-600 hover:text-blue-600 border border-slate-200/80 rounded-lg shadow-xs transition-all text-xs flex items-center gap-1 cursor-pointer"
+            title="Reset 3D View orientation"
+          >
+            <RotateCcw className="w-3.5 h-3.5" />
+            <span className="text-[11px] font-medium hidden sm:inline">Reset View</span>
+          </button>
         </div>
       )}
     </div>

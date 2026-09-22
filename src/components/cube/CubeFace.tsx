@@ -1,78 +1,72 @@
 'use client';
 
 import React from 'react';
-import { CubeColor, FaceName, COLOR_HEX_MAP, FACE_FULL_NAMES } from '@/types/cube';
+import { CubeColor, FaceName, COLOR_HEX_MAP } from '@/types/cube';
 
 interface CubeFaceProps {
   face: FaceName;
+  label: string;
   colors: CubeColor[];
   onStickerClick?: (index: number) => void;
   highlightIndex?: number | null;
-  size?: 'sm' | 'md' | 'lg';
-  showLabels?: boolean;
+  size?: 'xs' | 'sm' | 'md' | 'lg';
 }
 
 export const CubeFace: React.FC<CubeFaceProps> = ({
   face,
+  label,
   colors,
   onStickerClick,
   highlightIndex = null,
-  size = 'md',
-  showLabels = true,
+  size = 'sm',
 }) => {
-  const sizeClasses = {
-    sm: 'w-6 h-6 rounded-[4px] text-[10px]',
-    md: 'w-9 h-9 sm:w-11 sm:h-11 rounded-lg text-xs',
-    lg: 'w-12 h-12 sm:w-14 sm:h-14 rounded-xl text-sm',
+  const stickerSizes = {
+    xs: 'w-4 h-4 rounded-[3px]',
+    sm: 'w-5 h-5 sm:w-6 sm:h-6 rounded-[5px]',
+    md: 'w-7 h-7 sm:w-8 sm:h-8 rounded-md',
+    lg: 'w-9 h-9 sm:w-10 sm:h-10 rounded-lg',
   };
 
-  const gapClasses = {
-    sm: 'gap-1 p-1 rounded-lg',
+  const gapSizes = {
+    xs: 'gap-0.5 p-1 rounded-md',
+    sm: 'gap-1 p-1.5 rounded-lg',
     md: 'gap-1.5 p-2 rounded-xl',
     lg: 'gap-2 p-2.5 rounded-2xl',
   };
 
   return (
-    <div className="flex flex-col items-center">
-      {showLabels && (
-        <div className="mb-1.5 flex items-center justify-between w-full px-1">
-          <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
-            {FACE_FULL_NAMES[face]} ({face})
-          </span>
-          <span className="text-[10px] text-slate-500 font-mono">
-            {face === 'U' ? 'Top' : face === 'D' ? 'Bottom' : 'Side'}
-          </span>
-        </div>
-      )}
+    <div className="flex flex-col items-start gap-1">
+      <span className="text-[11px] font-semibold text-slate-500 tracking-tight">
+        {label}
+      </span>
 
-      <div className={`grid grid-cols-3 bg-slate-900/90 border border-slate-700/60 shadow-xl backdrop-blur-md ${gapClasses[size]}`}>
+      <div
+        className={`grid grid-cols-3 bg-slate-100 border border-slate-200/80 shadow-xs ${gapSizes[size]}`}
+      >
         {colors.map((color, idx) => {
           const isCenter = idx === 4;
           const isHighlighted = highlightIndex === idx;
-          const hex = COLOR_HEX_MAP[color] || '#334155';
+          const hex = COLOR_HEX_MAP[color] || '#e2e8f0';
 
           return (
             <button
               key={idx}
               type="button"
               onClick={() => onStickerClick && onStickerClick(idx)}
-              style={{ backgroundColor: hex }}
+              style={{
+                backgroundColor: hex,
+                border: color === 'white' ? '1px solid #cbd5e1' : '1px solid rgba(0,0,0,0.1)',
+              }}
               className={`
-                ${sizeClasses[size]}
-                relative flex items-center justify-center font-bold font-mono transition-all duration-150
-                shadow-[inset_0_2px_4px_rgba(255,255,255,0.25),0_2px_4px_rgba(0,0,0,0.4)]
-                hover:scale-105 active:scale-95 cursor-pointer
-                ${isCenter ? 'ring-2 ring-white/50' : ''}
-                ${isHighlighted ? 'ring-4 ring-cyan-400 animate-pulse' : ''}
+                ${stickerSizes[size]}
+                relative flex items-center justify-center transition-all duration-150 cursor-pointer
+                shadow-[inset_0_1px_2px_rgba(255,255,255,0.35),0_1px_2px_rgba(0,0,0,0.06)]
+                hover:scale-105 active:scale-95
+                ${isCenter ? 'ring-1 ring-slate-400/40' : ''}
+                ${isHighlighted ? 'ring-2 ring-blue-500 animate-pulse' : ''}
               `}
-              title={`${face}[${idx}] ${color}${isCenter ? ' (Center Piece)' : ''}`}
-            >
-              {isCenter && (
-                <span className="text-[10px] font-extrabold uppercase px-1 py-0.5 rounded bg-black/40 text-white backdrop-blur-xs">
-                  {face}
-                </span>
-              )}
-            </button>
+              title={`${face}[${idx}] ${color}${isCenter ? ' (Center)' : ''}`}
+            />
           );
         })}
       </div>
