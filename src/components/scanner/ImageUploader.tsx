@@ -62,7 +62,7 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({ onCapture }) => {
   };
 
   return (
-    <div className="w-full flex flex-col items-center gap-4">
+    <div className="w-full flex flex-col items-center gap-3">
       <div
         onDragOver={(e) => {
           e.preventDefault();
@@ -72,24 +72,24 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({ onCapture }) => {
         onDrop={handleDrop}
         onClick={() => fileInputRef.current?.click()}
         className={`
-          w-full max-w-sm aspect-square rounded-2xl border-2 border-dashed transition-all p-6
-          flex flex-col items-center justify-center text-center gap-3 cursor-pointer
-          ${dragOver ? 'border-cyan-400 bg-cyan-500/10 scale-102' : 'border-slate-700 bg-slate-900/40 hover:border-slate-500 hover:bg-slate-900/60'}
+          w-full max-w-xs aspect-square rounded-2xl border-2 border-dashed transition-all p-6
+          flex flex-col items-center justify-center text-center gap-2.5 cursor-pointer
+          ${dragOver ? 'border-blue-500 bg-blue-50/50 scale-102' : 'border-slate-300 bg-white hover:border-blue-400 hover:bg-slate-50/60 shadow-xs'}
         `}
       >
-        <div className="w-14 h-14 rounded-2xl bg-slate-800 border border-slate-700 flex items-center justify-center text-cyan-400 shadow-md">
+        <div className="w-12 h-12 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-600 shadow-2xs">
           {isProcessing ? (
-            <div className="w-6 h-6 border-2 border-cyan-400 border-t-transparent rounded-full animate-spin" />
+            <div className="w-5 h-5 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
           ) : (
-            <Upload className="w-7 h-7" />
+            <Upload className="w-6 h-6" />
           )}
         </div>
 
         <div>
-          <p className="text-sm font-semibold text-slate-200">
+          <p className="text-xs sm:text-sm font-semibold text-slate-800">
             {isProcessing ? 'Analyzing Image...' : 'Click to Upload or Drag Image'}
           </p>
-          <p className="text-xs text-slate-400 mt-1">
+          <p className="text-[11px] text-slate-400 mt-0.5">
             PNG, JPG, or WEBP of a single cube face
           </p>
         </div>

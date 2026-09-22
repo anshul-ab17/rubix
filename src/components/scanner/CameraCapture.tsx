@@ -1,33 +1,62 @@
 'use client';
 
 import React, { useRef, useState, useEffect, useCallback } from 'react';
-import { Camera, RefreshCw, AlertCircle } from 'lucide-react';
+import { Camera, RefreshCw, AlertCircle, Upload } from 'lucide-react';
 import { extractFaceColorsFromCanvas } from '@/lib/scanner/colour-detection';
 import { CubeColor } from '@/types/cube';
 
 interface CameraCaptureProps {
   onCapture: (colors: CubeColor[], confidences: number[], capturedImageUrl: string) => void;
+  onSwitchToUpload?: () => void;
 }
 
-export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture }) => {
+export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onSwitchToUpload }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const [cameraError, setCameraError] = useState<string | null>(null);
   const [isReady, setIsReady] = useState(false);
 
-  // Start webcam
+  // Helper to parse getUserMedia errors into user-friendly guidance
+  const parseCameraError = (err: unknown): string => {
+    if (err && typeof err === 'object' && 'name' in err) {
+      const errorName = (err as { name: string }).name;
+      if (errorName === 'NotFoundError' || errorName === 'DevicesNotFoundError') {
+        return 'No camera was found on this device. Please connect a webcam or switch to the Image Upload tab.';
+      }
+      if (errorName === 'NotAllowedError' || errorName === 'PermissionDeniedError') {
+        return 'Camera permission was denied. Please allow camera permissions in your browser or use Image Upload.';
+      }
+      if (errorName === 'NotReadableError' || errorName === 'TrackStartError') {
+        return 'Your camera is currently in use by another application. Please close other camera apps and retry.';
+      }
+      if (errorName === 'OverconstrainedError') {
+        return 'Requested camera resolution is not supported. Retrying with default settings...';
+      }
+    }
+    return 'Camera stream could not be initialized. Please use the Upload Image tab to scan your cube.';
+  };
+
+  // Start webcam with multi-step fallback
   const startCamera = useCallback(async () => {
     setCameraError(null);
     setIsReady(false);
-    try {
-      if (streamRef.current) {
-        streamRef.current.getTracks().forEach((t) => t.stop());
-      }
 
+    if (typeof navigator === 'undefined' || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      setCameraError('Camera access is not supported in this browser. Please use the Image Upload tab.');
+      return;
+    }
+
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((t) => t.stop());
+      streamRef.current = null;
+    }
+
+    // Attempt 1: Back/Environment camera (ideal for scanning physical cube)
+    try {
       const mediaStream = await navigator.mediaDevices.getUserMedia({
         video: {
-          facingMode: 'environment', // prefer back camera on mobile
+          facingMode: 'environment',
           width: { ideal: 640 },
           height: { ideal: 640 },
         },
@@ -37,43 +66,41 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture }) => {
       if (videoRef.current) {
         videoRef.current.srcObject = mediaStream;
       }
-    } catch (err: unknown) {
-      console.error('Camera access error:', err);
-      setCameraError('Unable to access camera. Please allow camera permissions or use Image Upload.');
+      return;
+    } catch (firstErr: unknown) {
+      // If error is not a fatal permission rejection, attempt Fallback with generic camera
+      const errorName = (firstErr as { name?: string })?.name;
+      if (errorName === 'NotAllowedError') {
+        setCameraError(parseCameraError(firstErr));
+        return;
+      }
+    }
+
+    // Attempt 2: Fallback to any default camera device
+    try {
+      const fallbackStream = await navigator.mediaDevices.getUserMedia({
+        video: true,
+      });
+
+      streamRef.current = fallbackStream;
+      if (videoRef.current) {
+        videoRef.current.srcObject = fallbackStream;
+      }
+    } catch (secondErr: unknown) {
+      setCameraError(parseCameraError(secondErr));
     }
   }, []);
 
   useEffect(() => {
-    let cancelled = false;
-    navigator.mediaDevices?.getUserMedia({
-      video: {
-        facingMode: 'environment',
-        width: { ideal: 640 },
-        height: { ideal: 640 },
-      },
-    }).then((mediaStream) => {
-      if (cancelled) {
-        mediaStream.getTracks().forEach((t) => t.stop());
-        return;
-      }
-      streamRef.current = mediaStream;
-      if (videoRef.current) {
-        videoRef.current.srcObject = mediaStream;
-      }
-    }).catch((err: unknown) => {
-      if (cancelled) return;
-      console.error('Camera access error:', err);
-      setCameraError('Unable to access camera. Please allow camera permissions or use Image Upload.');
-    });
+    startCamera();
 
     return () => {
-      cancelled = true;
       if (streamRef.current) {
         streamRef.current.getTracks().forEach((t) => t.stop());
         streamRef.current = null;
       }
     };
-  }, []);
+  }, [startCamera]);
 
   const handleCanPlay = () => {
     setIsReady(true);
@@ -95,7 +122,7 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture }) => {
 
     ctx.drawImage(video, 0, 0, width, height);
 
-    // Center 60% square ROI for the cube face
+    // Center 65% square ROI for the cube face
     const minDim = Math.min(width, height);
     const boxSize = minDim * 0.65;
     const roi = {
@@ -112,21 +139,37 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture }) => {
   };
 
   return (
-    <div className="flex flex-col items-center gap-4 w-full">
+    <div className="flex flex-col items-center gap-3 w-full">
       {cameraError ? (
-        <div className="w-full p-4 bg-rose-950/40 border border-rose-500/40 rounded-2xl flex flex-col items-center text-center gap-3 text-rose-200">
-          <AlertCircle className="w-8 h-8 text-rose-400" />
-          <p className="text-xs sm:text-sm">{cameraError}</p>
-          <button
-            onClick={startCamera}
-            className="px-4 py-2 bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-400/40 rounded-xl text-xs font-semibold flex items-center gap-1.5"
-          >
-            <RefreshCw className="w-3.5 h-3.5" />
-            <span>Try Again</span>
-          </button>
+        <div className="w-full p-4 bg-amber-50 border border-amber-200 rounded-2xl flex flex-col items-center text-center gap-2.5 text-amber-900">
+          <AlertCircle className="w-7 h-7 text-amber-600" />
+          <p className="text-xs sm:text-sm font-medium leading-relaxed max-w-md">
+            {cameraError}
+          </p>
+          <div className="flex items-center gap-2 mt-1">
+            <button
+              type="button"
+              onClick={startCamera}
+              className="px-3.5 py-1.5 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow-2xs transition-all cursor-pointer"
+            >
+              <RefreshCw className="w-3.5 h-3.5 text-slate-500" />
+              <span>Retry Camera</span>
+            </button>
+
+            {onSwitchToUpload && (
+              <button
+                type="button"
+                onClick={onSwitchToUpload}
+                className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow-xs transition-all cursor-pointer"
+              >
+                <Upload className="w-3.5 h-3.5" />
+                <span>Upload Image Instead</span>
+              </button>
+            )}
+          </div>
         </div>
       ) : (
-        <div className="relative w-full max-w-sm aspect-square bg-slate-950 rounded-2xl overflow-hidden border border-slate-700/80 shadow-2xl flex items-center justify-center">
+        <div className="relative w-full max-w-xs aspect-square bg-slate-900 rounded-2xl overflow-hidden border border-slate-200 shadow-md flex items-center justify-center">
           <video
             ref={videoRef}
             autoPlay
@@ -138,22 +181,22 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture }) => {
 
           {/* 3x3 Overlay Bounding Grid */}
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-            <div className="w-[65%] h-[65%] border-2 border-cyan-400 rounded-xl grid grid-cols-3 grid-rows-3 bg-cyan-400/5 shadow-[0_0_20px_rgba(6,182,212,0.3)]">
+            <div className="w-[65%] h-[65%] border-2 border-blue-400 rounded-xl grid grid-cols-3 grid-rows-3 bg-blue-400/5 shadow-[0_0_15px_rgba(37,99,235,0.25)]">
               {Array.from({ length: 9 }).map((_, i) => (
                 <div
                   key={i}
-                  className="border border-cyan-400/40 flex items-center justify-center"
+                  className="border border-blue-400/40 flex items-center justify-center"
                 >
-                  <div className="w-2.5 h-2.5 rounded-full bg-cyan-400/60" />
+                  <div className="w-2 h-2 rounded-full bg-blue-400/70" />
                 </div>
               ))}
             </div>
           </div>
 
           {!isReady && (
-            <div className="absolute inset-0 bg-slate-950/80 flex flex-col items-center justify-center gap-2 text-slate-400 text-xs">
-              <RefreshCw className="w-6 h-6 animate-spin text-cyan-400" />
-              <span>Starting camera stream...</span>
+            <div className="absolute inset-0 bg-white/90 backdrop-blur-xs flex flex-col items-center justify-center gap-2 text-slate-500 text-xs">
+              <RefreshCw className="w-5 h-5 animate-spin text-blue-600" />
+              <span>Connecting camera stream...</span>
             </div>
           )}
         </div>
@@ -165,11 +208,12 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture }) => {
       {/* Snap Button */}
       {!cameraError && isReady && (
         <button
+          type="button"
           onClick={handleCapture}
-          className="px-6 py-3 bg-gradient-to-r from-cyan-500 to-teal-400 hover:from-cyan-400 hover:to-teal-300 text-slate-950 font-bold rounded-2xl shadow-xl shadow-cyan-500/25 flex items-center gap-2 active:scale-95 transition-all cursor-pointer"
+          className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-bold text-xs rounded-xl shadow-md shadow-blue-500/20 flex items-center gap-1.5 transition-all cursor-pointer"
         >
-          <Camera className="w-5 h-5" />
-          <span>Capture Face Colors</span>
+          <Camera className="w-4 h-4" />
+          <span>Capture Face</span>
         </button>
       )}
     </div>

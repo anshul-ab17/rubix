@@ -225,7 +225,10 @@ export const FaceScanner: React.FC<FaceScannerProps> = ({ isOpen, onClose }) => 
 
             {/* Capture Canvas */}
             {scanMethod === 'camera' ? (
-              <CameraCapture onCapture={handleCapture} />
+              <CameraCapture
+                onCapture={handleCapture}
+                onSwitchToUpload={() => setScanMethod('upload')}
+              />
             ) : (
               <ImageUploader onCapture={handleCapture} />
             )}
