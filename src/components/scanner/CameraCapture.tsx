@@ -38,10 +38,7 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onSwitc
   };
 
   // Start webcam with multi-step fallback
-  const startCamera = useCallback(async () => {
-    setCameraError(null);
-    setIsReady(false);
-
+  const initCamera = useCallback(async () => {
     if (typeof navigator === 'undefined' || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
       setCameraError('Camera access is not supported in this browser. Please use the Image Upload tab.');
       return;
@@ -66,6 +63,7 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onSwitc
       if (videoRef.current) {
         videoRef.current.srcObject = mediaStream;
       }
+      setCameraError(null);
       return;
     } catch (firstErr: unknown) {
       // If error is not a fatal permission rejection, attempt Fallback with generic camera
@@ -86,21 +84,35 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onSwitc
       if (videoRef.current) {
         videoRef.current.srcObject = fallbackStream;
       }
+      setCameraError(null);
     } catch (secondErr: unknown) {
       setCameraError(parseCameraError(secondErr));
     }
   }, []);
 
+  const handleRetry = () => {
+    setCameraError(null);
+    setIsReady(false);
+    initCamera();
+  };
+
   useEffect(() => {
-    startCamera();
+    let active = true;
+
+    initCamera().catch((err) => {
+      if (active) {
+        setCameraError(parseCameraError(err));
+      }
+    });
 
     return () => {
+      active = false;
       if (streamRef.current) {
         streamRef.current.getTracks().forEach((t) => t.stop());
         streamRef.current = null;
       }
     };
-  }, [startCamera]);
+  }, [initCamera]);
 
   const handleCanPlay = () => {
     setIsReady(true);
@@ -149,7 +161,7 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onSwitc
           <div className="flex items-center gap-2 mt-1">
             <button
               type="button"
-              onClick={startCamera}
+              onClick={handleRetry}
               className="px-3.5 py-1.5 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow-2xs transition-all cursor-pointer"
             >
               <RefreshCw className="w-3.5 h-3.5 text-slate-500" />
