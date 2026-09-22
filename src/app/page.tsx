@@ -9,14 +9,10 @@ import {
   ArrowRight, 
   Play, 
   Camera, 
-  Sparkles, 
   Timer, 
   Layers, 
-  Compass, 
   CheckCircle2, 
-  ShieldCheck, 
   Zap,
-  BookOpen,
   X
 } from 'lucide-react';
 
