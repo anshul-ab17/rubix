@@ -37,73 +37,64 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onSwitc
     return 'Camera stream could not be initialized. Please use the Upload Image tab to scan your cube.';
   };
 
-  // Start webcam with multi-step fallback
-  const initCamera = useCallback(async () => {
-    if (typeof navigator === 'undefined' || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-      setCameraError('Camera access is not supported in this browser. Please use the Image Upload tab.');
-      return;
-    }
-
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach((t) => t.stop());
-      streamRef.current = null;
-    }
-
-    // Attempt 1: Back/Environment camera (ideal for scanning physical cube)
-    try {
-      const mediaStream = await navigator.mediaDevices.getUserMedia({
-        video: {
-          facingMode: 'environment',
-          width: { ideal: 640 },
-          height: { ideal: 640 },
-        },
-      });
-
-      streamRef.current = mediaStream;
-      if (videoRef.current) {
-        videoRef.current.srcObject = mediaStream;
-      }
-      setCameraError(null);
-      return;
-    } catch (firstErr: unknown) {
-      // If error is not a fatal permission rejection, attempt Fallback with generic camera
-      const errorName = (firstErr as { name?: string })?.name;
-      if (errorName === 'NotAllowedError') {
-        setCameraError(parseCameraError(firstErr));
-        return;
-      }
-    }
-
-    // Attempt 2: Fallback to any default camera device
-    try {
-      const fallbackStream = await navigator.mediaDevices.getUserMedia({
-        video: true,
-      });
-
-      streamRef.current = fallbackStream;
-      if (videoRef.current) {
-        videoRef.current.srcObject = fallbackStream;
-      }
-      setCameraError(null);
-    } catch (secondErr: unknown) {
-      setCameraError(parseCameraError(secondErr));
-    }
-  }, []);
+  const [retryCount, setRetryCount] = useState(0);
 
   const handleRetry = () => {
-    setCameraError(null);
-    setIsReady(false);
-    initCamera();
+    setRetryCount((c) => c + 1);
   };
 
   useEffect(() => {
     let active = true;
 
-    initCamera().catch((err) => {
-      if (active) {
-        setCameraError(parseCameraError(err));
+    if (typeof navigator === 'undefined' || !navigator.mediaDevices?.getUserMedia) {
+      setCameraError('Camera access is not supported in this browser. Please use the Image Upload tab.');
+      return;
+    }
+
+    const startStream = async () => {
+      // Attempt 1: Environment Camera
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: 'environment', width: { ideal: 640 }, height: { ideal: 640 } },
+        });
+        if (!active) {
+          stream.getTracks().forEach((t) => t.stop());
+          return;
+        }
+        streamRef.current = stream;
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+        }
+        setCameraError(null);
+        return;
+      } catch (firstErr: unknown) {
+        if (!active) return;
+        const errorName = (firstErr as { name?: string })?.name;
+        if (errorName === 'NotAllowedError') {
+          setCameraError(parseCameraError(firstErr));
+          return;
+        }
       }
-    });
+
+      // Attempt 2: Generic Camera Fallback
+      try {
+        const fallbackStream = await navigator.mediaDevices.getUserMedia({ video: true });
+        if (!active) {
+          fallbackStream.getTracks().forEach((t) => t.stop());
+          return;
+        }
+        streamRef.current = fallbackStream;
+        if (videoRef.current) {
+          videoRef.current.srcObject = fallbackStream;
+        }
+        setCameraError(null);
+      } catch (secondErr: unknown) {
+        if (!active) return;
+        setCameraError(parseCameraError(secondErr));
+      }
+    };
+
+    startStream();
 
     return () => {
       active = false;
@@ -112,7 +103,7 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onSwitc
         streamRef.current = null;
       }
     };
-  }, [initCamera]);
+  }, [retryCount]);
 
   const handleCanPlay = () => {
     setIsReady(true);
