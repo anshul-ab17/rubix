@@ -195,7 +195,7 @@ export const CubeTimer: React.FC = () => {
           /* Large Digital Timer View */
           <div>
             <div 
-              onPointerDown={(e) => {
+              onPointerDown={() => {
                 if (timerState === 'running') {
                   stopTimer();
                 } else if (timerState === 'idle') {

@@ -29,7 +29,7 @@ export default function SolverPage() {
   const [isGuideOpen, setIsGuideOpen] = useState(false);
   const [isScannerOpen, setIsScannerOpen] = useState(false);
   const [isShortcutsOpen, setIsShortcutsOpen] = useState(false);
-  const [soundEnabled, setSoundEnabled] = useState(true);
+  const [soundEnabled, setSoundEnabled] = useState(() => sound.isEnabled());
   const [mobileTab, setMobileTab] = useState<'editor' | 'preview' | 'solution' | 'timer'>('preview');
 
   const applySingleMove = useCubeStore((s) => s.applySingleMove);
@@ -37,11 +37,6 @@ export default function SolverPage() {
   const resetCube = useCubeStore((s) => s.resetCube);
   const nextStep = useCubeStore((s) => s.nextStep);
   const prevStep = useCubeStore((s) => s.prevStep);
-
-  // Sync sound initial state
-  useEffect(() => {
-    setSoundEnabled(sound.isEnabled());
-  }, []);
 
   const handleToggleSound = () => {
     const newState = sound.toggleSound();
