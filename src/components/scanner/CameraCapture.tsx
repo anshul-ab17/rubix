@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useRef, useState, useEffect, useCallback } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { Camera, RefreshCw, AlertCircle, Upload } from 'lucide-react';
 import { extractFaceColorsFromCanvas } from '@/lib/scanner/colour-detection';
 import { CubeColor } from '@/types/cube';
@@ -46,12 +46,14 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onSwitc
   useEffect(() => {
     let active = true;
 
-    if (typeof navigator === 'undefined' || !navigator.mediaDevices?.getUserMedia) {
-      setCameraError('Camera access is not supported in this browser. Please use the Image Upload tab.');
-      return;
-    }
-
     const startStream = async () => {
+      if (typeof navigator === 'undefined' || !navigator.mediaDevices?.getUserMedia) {
+        if (active) {
+          setCameraError('Camera access is not supported in this browser. Please use the Image Upload tab.');
+        }
+        return;
+      }
+
       // Attempt 1: Environment Camera
       try {
         const stream = await navigator.mediaDevices.getUserMedia({
